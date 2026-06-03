@@ -53,8 +53,8 @@
     background:linear-gradient(180deg,var(--card2),var(--card));box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 12px 34px rgba(0,0,0,.28);transition:transform .2s,box-shadow .2s;}
   .overview:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 16px 40px rgba(0,0,0,.34);}
   .donut-wrap{position:relative;flex:0 0 auto;width:172px;height:172px;animation:donutIn .85s .12s both cubic-bezier(.2,.85,.2,1);}
-  #donut{display:block;width:172px;height:172px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.3));}
-  #donut .seg{transition:opacity .18s;}
+  #donut,#cryptoDonut{display:block;width:172px;height:172px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.3));}
+  #donut .seg,#cryptoDonut .seg{transition:opacity .18s;}
   .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
   .dc-val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:23px;letter-spacing:-.01em;text-shadow:0 0 26px rgba(227,169,74,.22);}
   .dc-lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-top:3px;}
@@ -215,7 +215,31 @@
   <div class="panel-label">Positions <span class="ph-hint">tap a holding to expand</span></div>
   <div id="chips" class="chips"></div>
   <div id="rows"></div>
-  <button class="btn" id="addBtn" style="margin:2px 0 20px;">+ Add position</button>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 20px;">
+    <button class="btn" id="addBtn">+ Add position</button>
+    <button class="btn" id="addCryptoBtn">+ Add crypto</button>
+  </div>
+
+  <div id="cryptoSection" style="display:none;">
+    <hr class="rule">
+    <div class="panel-label">Crypto — measured within your crypto sleeve</div>
+    <div class="overview" style="margin-bottom:18px;">
+      <div class="donut-wrap">
+        <svg id="cryptoDonut" viewBox="0 0 180 180"></svg>
+        <div class="donut-center"><div class="dc-val" id="cryptoVal">—</div><div class="dc-lbl">crypto</div></div>
+      </div>
+      <div class="ov-side"><div class="ov-cap" id="cryptoCap"></div><div class="legend" id="cryptoLegend"></div></div>
+    </div>
+    <div class="panel-label">Crypto limits</div>
+    <div class="dial">
+      <div class="field"><div class="k">Ceiling</div><div class="v"><input id="cCeil" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
+      <div class="field"><div class="k">Floor / trim-to</div><div class="v"><input id="cFloor" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
+    </div>
+    <div class="hint">Separate ceiling and floor for crypto, measured against your crypto holdings only. Each coin can still override per-position. Crypto prices are entered by hand for now — Refresh updates stocks.</div>
+    <div class="panel-label">Coins <span class="ph-hint">tap to expand</span></div>
+    <div id="cryptoChips" class="chips"></div>
+    <div id="cryptoRows"></div>
+  </div>
 
   <div class="panel-label">Cash</div>
   <div class="cashbar">
@@ -242,19 +266,22 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 const PALETTE=['#E3A94A','#E0B15C','#CBA46C','#A9A971','#84B58D','#6FBFA9','#6FA9C7','#9B96C9','#C98AA1','#C98A6B'];
 const BANK_COLOR='#84A9DA', CASH_COLOR='#626975';
 
-let state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[] };
+let state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30 };
 let nextId = 1, saveTimer = null, history = [], booted = false;
 const openIds = new Set(); let justOpened = null;
 
 async function loadConfig(){
-  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[], ...(await r.json()) }; }catch(e){}
-  state.positions = (state.positions||[]).map(p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", note:p.note||"" }));
+  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, ...(await r.json()) }; }catch(e){}
+  const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", note:p.note||"" });
+  state.positions = (state.positions||[]).map(mapPos);
+  state.crypto = (state.crypto||[]).map(mapPos);
 }
 function saveConfig(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:state.bank, cash:num(state.cash), minCash:num(state.minCash),
-      positions: state.positions.map(p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, note:(p.note||"").trim() })) };
+    const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, note:(p.note||"").trim() });
+    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:state.bank, cash:num(state.cash), minCash:num(state.minCash), cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
+      positions: state.positions.map(mapPos), crypto: state.crypto.map(mapPos) };
     fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
   }, 400);
 }
@@ -276,15 +303,15 @@ function driftFor(sym, current){
   return { pts:+(current-base.v).toFixed(1), days, vals: series.map(s=>s.v).concat(current) };
 }
 
-function compute(){
-  const rows = state.positions.map(p => ({ ...p, mv:num(p.shares)*num(p.price) }));
-  const total = rows.reduce((s,p)=>s+p.mv,0) + num(state.cash);
+function computeList(list, cashVal, gC, gF, bankName){
+  const rows = list.map(p => ({ ...p, mv:num(p.shares)*num(p.price) }));
+  const total = rows.reduce((s,p)=>s+p.mv,0) + num(cashVal);
   let overCount = 0;
   const out = rows.map(p=>{
     const weight = total>0 ? (p.mv/total)*100 : 0;
-    const isBank = p.ticker.trim()!=="" && p.ticker.trim().toUpperCase()===(state.bank||"").trim().toUpperCase();
+    const isBank = !!bankName && p.ticker.trim()!=="" && p.ticker.trim().toUpperCase()===(bankName||"").trim().toUpperCase();
     const mult = num(p.cost)>0 ? num(p.price)/num(p.cost) : 0;
-    const gC=num(state.ceiling), gF=num(state.floor), ratio=gC>0?gF/gC:0.8, hasC=num(p.ceiling)>0;
+    const ratio = gC>0?gF/gC:0.8, hasC = num(p.ceiling)>0;
     const effCeil = hasC ? num(p.ceiling) : gC;
     const effFloor = num(p.floor)>0 ? num(p.floor) : hasC ? +(effCeil*ratio).toFixed(2) : gF;
     let kind="ok", sellShares=0, sellVal=0, landWeight=weight;
@@ -294,19 +321,26 @@ function compute(){
     const house = (!isBank && mult>=2 && num(p.price)>0) ? { principal:num(p.shares)*num(p.cost) } : null;
     return { ...p, weight, isBank, mult, effCeil, effFloor, kind, sellShares, sellVal, landWeight, house };
   });
+  return { rows:out, total, overCount };
+}
+function compute(){
+  const { rows, total, overCount } = computeList(state.positions, state.cash, num(state.ceiling), num(state.floor), state.bank);
   const minCash = num(state.minCash), cashPct = total>0 ? (num(state.cash)/total)*100 : 0;
-  return { rows:out, total, overCount, cashPct, minCash, cashLow: minCash>0 && cashPct<minCash };
+  return { rows, total, overCount, cashPct, minCash, cashLow: minCash>0 && cashPct<minCash };
+}
+function computeCrypto(){
+  return computeList(state.crypto, 0, num(state.cryptoCeiling), num(state.cryptoFloor), "");
 }
 
-function renderDonut(segs, total){
-  const svg=$("donut"); const cx=90,cy=90,r=64,sw=20,C=2*Math.PI*r;
+function renderDonut(svgId, segs, total){
+  const svg=$(svgId); const cx=90,cy=90,r=64,sw=20,C=2*Math.PI*r;
   let off=0, inner=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>`;
   if(total>0) segs.forEach(s=>{ const full=C*Math.max(0,Math.min(100,s.pct))/100, len=Math.max(0,full-2);
     inner+=`<circle class="seg" data-seg="${esc(s.label)}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`; off+=full; });
   svg.innerHTML=inner;
 }
-function renderLegend(segs){
-  $("legend").innerHTML = segs.length ? segs.map(s=>`<div class="leg" data-seg="${esc(s.label)}"><span class="ld" style="background:${s.color};color:${s.color}"></span><span class="lt">${esc(s.label)}</span><span class="lp">${s.pct.toFixed(1)}%</span></div>`).join('')
+function renderLegend(legendId, segs){
+  $(legendId).innerHTML = segs.length ? segs.map(s=>`<div class="leg" data-seg="${esc(s.label)}"><span class="ld" style="background:${s.color};color:${s.color}"></span><span class="lt">${esc(s.label)}</span><span class="lp">${s.pct.toFixed(1)}%</span></div>`).join('')
     : `<div class="ov-cap">Add positions to see your allocation.</div>`;
 }
 function renderTrend(){
@@ -327,51 +361,66 @@ function animateValue(el, to){
   requestAnimationFrame(step);
 }
 
+function paintRow(r, total, bankName, unitWord){
+  const chip=$("chip-"+r.id);
+  if(chip){ chip.className="chip "+r.kind+(openIds.has(r.id)?" open":""); const ct=$("ct-"+r.id); if(ct) ct.textContent=(r.ticker.trim().toUpperCase()||"—");
+    const cp=$("cp-"+r.id); if(cp) cp.textContent = num(r.price)>0 ? money(r.price) : "—";
+    const cw=$("cw-"+r.id); if(cw) cw.textContent = total>0 ? r.weight.toFixed(1)+"%" : "—"; }
+  const card=$("card-"+r.id); if(!card) return;
+  card.className = "pos "+r.kind + (card.classList.contains("enter")?" enter":"");
+  $("wt-"+r.id).textContent = total>0 ? r.weight.toFixed(1)+"%" : "—";
+  $("mv-"+r.id).textContent = money(r.mv);
+  let tags=""; if(r.isBank) tags+=`<span class="tag bank">Bank</span>`; if(num(r.ceiling)>0) tags+=`<span class="tag cap">${num(r.ceiling)}% cap</span>`; if(r.house) tags+=`<span class="tag x2">${r.mult.toFixed(1)}×</span>`;
+  $("tags-"+r.id).innerHTML = tags;
+  const note=(r.note||"").trim(); let html="";
+  if(r.kind==="trim") html=`<div class="action"><span class="lead">▲ Over your ${r.effCeil}% ceiling</span> — trim <b>${r.sellShares}</b> ${r.sellShares===1?unitWord:unitWord+"s"} (≈ <b>${money0(r.sellVal)}</b>)${bankName?` → ${bankName}`:""}<br><span class="land">lands at ~${r.landWeight.toFixed(1)}%</span>${note?`<span class="n">“${esc(note)}”</span>`:""}</div>`;
+  else if(r.kind==="bank") html=`<div class="status bank"><span class="dot"></span>Bank — trims land here</div>`;
+  else if(r.kind==="under") html=`<div class="status under"><span class="dot"></span>Underweight <span class="near">· ${(r.effFloor-r.weight).toFixed(1)} pts below your ${r.effFloor}% floor</span></div>`;
+  else html=`<div class="status ok"><span class="dot"></span>Within bounds <span class="near">· ${Math.max(0,r.effCeil-r.weight).toFixed(1)} pts to your ${r.effCeil}% ceiling</span></div>`;
+  if(!r.isBank){ const dr=driftFor(r.ticker.trim().toUpperCase(), r.weight); if(dr){ html+=`<div class="drift">${sparkline(dr.vals)}<span>${dr.pts>=0?"▲":"▼"} ${Math.abs(dr.pts).toFixed(1)} pts · ${dr.days}d drift</span></div>`; } }
+  if(r.house) html+=`<div class="house"><span>●</span><div>Past 2× — your <b>${money0(r.house.principal)}</b> principal is house money. A cost-basis fact, unaffected by the ceiling.</div></div>`;
+  $("out-"+r.id).innerHTML=html;
+}
+
 function render(){
-  const { rows, total, overCount, cashPct, minCash, cashLow } = compute();
+  const stock = compute();
+  const crypto = computeCrypto();
 
   const segs=[];
-  rows.forEach((r,i)=>{ if(r.mv>0) segs.push({ label:(r.ticker.trim().toUpperCase()||"—"), pct:r.weight, color:r.isBank?BANK_COLOR:PALETTE[i%PALETTE.length] }); });
-  if(num(state.cash)>0 && total>0) segs.push({ label:"CASH", pct:cashPct, color:CASH_COLOR });
-  renderDonut(segs, total); renderLegend(segs); renderTrend();
-  $("dcVal").textContent = total>0 ? money0(total) : "—";
-  $("ovCap").textContent = state.positions.length ? `${state.positions.length} position${state.positions.length>1?"s":""} · cash ${cashPct.toFixed(1)}%` : "";
+  stock.rows.forEach((r,i)=>{ if(r.mv>0) segs.push({ label:(r.ticker.trim().toUpperCase()||"—"), pct:r.weight, color:r.isBank?BANK_COLOR:PALETTE[i%PALETTE.length] }); });
+  if(num(state.cash)>0 && stock.total>0) segs.push({ label:"CASH", pct:stock.cashPct, color:CASH_COLOR });
+  renderDonut("donut", segs, stock.total); renderLegend("legend", segs); renderTrend();
+  $("dcVal").textContent = stock.total>0 ? money0(stock.total) : "—";
+  $("ovCap").textContent = state.positions.length ? `${state.positions.length} position${state.positions.length>1?"s":""} · cash ${stock.cashPct.toFixed(1)}%` : "";
 
+  const hasCrypto = state.crypto.length>0;
+  $("cryptoSection").style.display = hasCrypto ? "" : "none";
+  if(hasCrypto){
+    const csegs=[];
+    crypto.rows.forEach((r,i)=>{ if(r.mv>0) csegs.push({ label:(r.ticker.trim().toUpperCase()||"—"), pct:r.weight, color:PALETTE[i%PALETTE.length] }); });
+    renderDonut("cryptoDonut", csegs, crypto.total); renderLegend("cryptoLegend", csegs);
+    $("cryptoVal").textContent = crypto.total>0 ? money0(crypto.total) : "—";
+    $("cryptoCap").textContent = `${state.crypto.length} coin${state.crypto.length>1?"s":""}`;
+  }
+
+  const over = stock.overCount + crypto.overCount;
   const b = $("banner");
-  if(!state.positions.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; }
+  if(!state.positions.length && !state.crypto.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; }
   else {
     const parts=[];
-    if(overCount) parts.push(`${overCount} position${overCount>1?"s":""} over your ceiling`);
-    if(cashLow) parts.push(`cash below your ${minCash}% floor`);
+    if(over) parts.push(`${over} position${over>1?"s":""} over your ceiling`);
+    if(stock.cashLow) parts.push(`cash below your ${stock.minCash}% floor`);
     if(parts.length){ b.className="banner act"; b.innerHTML=`<span class="mark">▲</span><div class="btxt">${parts.join(" · ")} — check your plan.</div>`; }
     else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; }
   }
 
-  rows.forEach(r=>{
-    const chip=$("chip-"+r.id);
-    if(chip){ chip.className="chip "+r.kind+(openIds.has(r.id)?" open":""); const ct=$("ct-"+r.id); if(ct) ct.textContent=(r.ticker.trim().toUpperCase()||"—");
-      const cp=$("cp-"+r.id); if(cp) cp.textContent = num(r.price)>0 ? money(r.price) : "—";
-      const cw=$("cw-"+r.id); if(cw) cw.textContent = total>0 ? r.weight.toFixed(1)+"%" : "—"; }
-    const card=$("card-"+r.id); if(!card) return;
-    card.className = "pos "+r.kind + (card.classList.contains("enter")?" enter":"");
-    $("wt-"+r.id).textContent = total>0 ? r.weight.toFixed(1)+"%" : "—";
-    $("mv-"+r.id).textContent = money(r.mv);
-    let tags=""; if(r.isBank) tags+=`<span class="tag bank">Bank</span>`; if(num(r.ceiling)>0) tags+=`<span class="tag cap">${num(r.ceiling)}% cap</span>`; if(r.house) tags+=`<span class="tag x2">${r.mult.toFixed(1)}×</span>`;
-    $("tags-"+r.id).innerHTML = tags;
-    const note=(r.note||"").trim(); let html="";
-    if(r.kind==="trim") html=`<div class="action"><span class="lead">▲ Over your ${r.effCeil}% ceiling</span> — trim <b>${r.sellShares}</b> ${r.sellShares===1?"share":"shares"} (≈ <b>${money0(r.sellVal)}</b>)${state.bank?` → ${state.bank}`:""}<br><span class="land">lands at ~${r.landWeight.toFixed(1)}%</span>${note?`<span class="n">“${esc(note)}”</span>`:""}</div>`;
-    else if(r.kind==="bank") html=`<div class="status bank"><span class="dot"></span>Bank — trims land here</div>`;
-    else if(r.kind==="under") html=`<div class="status under"><span class="dot"></span>Underweight <span class="near">· ${(r.effFloor-r.weight).toFixed(1)} pts below your ${r.effFloor}% floor</span></div>`;
-    else html=`<div class="status ok"><span class="dot"></span>Within bounds <span class="near">· ${Math.max(0,r.effCeil-r.weight).toFixed(1)} pts to your ${r.effCeil}% ceiling</span></div>`;
-    if(!r.isBank){ const dr=driftFor(r.ticker.trim().toUpperCase(), r.weight); if(dr){ html+=`<div class="drift">${sparkline(dr.vals)}<span>${dr.pts>=0?"▲":"▼"} ${Math.abs(dr.pts).toFixed(1)} pts · ${dr.days}d drift</span></div>`; } }
-    if(r.house) html+=`<div class="house"><span>●</span><div>Past 2× — your <b>${money0(r.house.principal)}</b> principal is house money. A cost-basis fact, unaffected by the ceiling.</div></div>`;
-    $("out-"+r.id).innerHTML=html;
-  });
+  stock.rows.forEach(r=>paintRow(r, stock.total, state.bank, "share"));
+  crypto.rows.forEach(r=>paintRow(r, crypto.total, "", "unit"));
 
-  $("cashNote").textContent = total<=0 ? "" : minCash>0
-    ? `Cash ${cashPct.toFixed(1)}% · ${cashLow?`below your ${minCash}% floor`:`above your ${minCash}% floor`}`
-    : `Cash ${cashPct.toFixed(1)}% of account`;
-  $("cashNote").style.color = cashLow ? "var(--gold)" : "var(--muted2)";
+  $("cashNote").textContent = stock.total<=0 ? "" : stock.minCash>0
+    ? `Cash ${stock.cashPct.toFixed(1)}% · ${stock.cashLow?`below your ${stock.minCash}% floor`:`above your ${stock.minCash}% floor`}`
+    : `Cash ${stock.cashPct.toFixed(1)}% of account`;
+  $("cashNote").style.color = stock.cashLow ? "var(--gold)" : "var(--muted2)";
 
   state.positions.forEach(p=>{ const el=$("pc-"+p.id); if(!el) return; const pc=num(p.prevClose), cur=num(p.price);
     if(pc>0){ const ch=cur>0?(cur-pc)/pc*100:null;
@@ -379,17 +428,17 @@ function render(){
     else el.textContent=""; });
 }
 
-function buildRows(){
-  const host=$("rows"); host.innerHTML="";
-  const gC=num(state.ceiling), gF=num(state.floor);
-  state.positions.filter(p=>openIds.has(p.id)).forEach((p)=>{
+function buildCardsInto(hostId, list, gC, gF, amtLabel){
+  const host=$(hostId); if(!host) return; host.innerHTML="";
+  const costLabel = amtLabel==="Units" ? "Cost / unit" : "Cost / sh";
+  list.filter(p=>openIds.has(p.id)).forEach((p)=>{
     const el=document.createElement("div"); el.className="pos"; el.id="card-"+p.id;
     if(justOpened===p.id) el.classList.add("enter");
     el.innerHTML=`<div class="top"><div class="tkr"><input data-id="${p.id}" data-f="ticker" value="${esc(p.ticker)}" maxlength="6" aria-label="ticker"><span id="tags-${p.id}"></span></div>
       <div style="display:flex;align-items:flex-start;gap:6px;"><div class="right"><div class="wt" id="wt-${p.id}">—</div><div class="mv" id="mv-${p.id}">—</div></div><button class="collapse" data-open="${p.id}" title="collapse">▴</button><button class="rm" data-rm="${p.id}" title="remove">×</button></div></div>
-      <div class="inputs"><div class="g"><label>Shares</label><input data-id="${p.id}" data-f="shares" type="number" inputmode="decimal" value="${p.shares}"></div>
+      <div class="inputs"><div class="g"><label>${amtLabel}</label><input data-id="${p.id}" data-f="shares" type="number" inputmode="decimal" value="${p.shares}"></div>
       <div class="g"><label>Price</label><input data-id="${p.id}" data-f="price" type="number" inputmode="decimal" value="${p.price}"><div class="pc" id="pc-${p.id}"></div></div>
-      <div class="g"><label>Cost / sh</label><input data-id="${p.id}" data-f="cost" type="number" inputmode="decimal" value="${p.cost}"></div></div>
+      <div class="g"><label>${costLabel}</label><input data-id="${p.id}" data-f="cost" type="number" inputmode="decimal" value="${p.cost}"></div></div>
       <button class="adv-toggle" data-adv="${p.id}">＋ rules &amp; note</button>
       <div class="adv" id="adv-${p.id}">
         <div class="inputs" style="grid-template-columns:1fr 1fr;"><div class="g"><label>Ceiling % override</label><input data-id="${p.id}" data-f="ceiling" type="number" inputmode="decimal" value="${p.ceiling||''}" placeholder="${gC}"></div>
@@ -399,13 +448,19 @@ function buildRows(){
       <div id="out-${p.id}"></div>`;
     host.appendChild(el);
   });
-  justOpened=null;
-  buildChips(); buildBankOptions(); render();
 }
-function buildChips(){
-  const host=$("chips");
-  if(!state.positions.length){ host.innerHTML=`<div class="empty" style="grid-column:1/-1;">No positions yet — tap <b>+ Add position</b>.</div>`; return; }
-  host.innerHTML = state.positions.map(p=>`<button class="chip" id="chip-${p.id}" data-open="${p.id}"><span class="cd"></span><span class="cmain"><span class="ct" id="ct-${p.id}">${esc((p.ticker||"").toUpperCase()||"—")}</span><span class="cp" id="cp-${p.id}">—</span></span><span class="cw" id="cw-${p.id}">—</span></button>`).join('');
+function buildChipsInto(hostId, list, emptyMsg){
+  const host=$(hostId); if(!host) return;
+  if(!list.length){ host.innerHTML = emptyMsg ? `<div class="empty" style="grid-column:1/-1;">${emptyMsg}</div>` : ""; return; }
+  host.innerHTML = list.map(p=>`<button class="chip" id="chip-${p.id}" data-open="${p.id}"><span class="cd"></span><span class="cmain"><span class="ct" id="ct-${p.id}">${esc((p.ticker||"").toUpperCase()||"—")}</span><span class="cp" id="cp-${p.id}">—</span></span><span class="cw" id="cw-${p.id}">—</span></button>`).join('');
+}
+function buildRows(){
+  buildCardsInto("rows", state.positions, num(state.ceiling), num(state.floor), "Shares");
+  buildCardsInto("cryptoRows", state.crypto, num(state.cryptoCeiling), num(state.cryptoFloor), "Units");
+  justOpened=null;
+  buildChipsInto("chips", state.positions, "No positions yet — tap <b>+ Add position</b>.");
+  buildChipsInto("cryptoChips", state.crypto, "");
+  buildBankOptions(); render();
 }
 function buildBankOptions(){
   const sel=$("bankSel"); sel.innerHTML=`<option value="">— none —</option>`;
@@ -434,9 +489,11 @@ async function refreshPrices(){
 
 document.addEventListener("input", e=>{
   const t=e.target;
-  if(t.dataset && t.dataset.id){ const p=state.positions.find(x=>x.id==t.dataset.id); if(!p) return; p[t.dataset.f]=(t.dataset.f==="ticker")?t.value.toUpperCase():t.value; render(); }
+  if(t.dataset && t.dataset.id){ const p=state.positions.find(x=>x.id==t.dataset.id)||state.crypto.find(x=>x.id==t.dataset.id); if(!p) return; p[t.dataset.f]=(t.dataset.f==="ticker")?t.value.toUpperCase():t.value; render(); }
   else if(t.id==="ceil"){ state.ceiling=t.value; render(); }
   else if(t.id==="floor"){ state.floor=t.value; render(); }
+  else if(t.id==="cCeil"){ state.cryptoCeiling=t.value; render(); }
+  else if(t.id==="cFloor"){ state.cryptoFloor=t.value; render(); }
   else if(t.id==="cash"){ state.cash=t.value; render(); }
   else if(t.id==="minCash"){ state.minCash=t.value; render(); }
 });
@@ -451,7 +508,7 @@ document.addEventListener("click", e=>{
   const rm=t.closest&&t.closest("[data-rm]");
   const op=t.closest&&t.closest("[data-open]");
   if(adv){ const id=adv.dataset.adv; $("adv-"+id).classList.toggle("open"); adv.textContent = $("adv-"+id).classList.contains("open") ? "− rules & note" : "＋ rules & note"; }
-  else if(rm){ const id=rm.dataset.rm; state.positions=state.positions.filter(p=>p.id!=id); openIds.delete(+id); buildRows(); saveConfig(); }
+  else if(rm){ const id=rm.dataset.rm; state.positions=state.positions.filter(p=>p.id!=id); state.crypto=state.crypto.filter(p=>p.id!=id); openIds.delete(+id); buildRows(); saveConfig(); }
   else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } buildRows(); }
 });
 const legendEl=$("legend");
@@ -460,11 +517,12 @@ legendEl.addEventListener("mouseover", e=>{ const leg=e.target.closest(".leg"); 
   document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity = l.dataset.seg===s?"1":"0.4"); });
 legendEl.addEventListener("mouseout", e=>{ if(e.target.closest(".leg")){ document.querySelectorAll("#donut .seg").forEach(g=>g.style.opacity=""); document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity=""); } });
 $("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
+$("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
 $("refreshBtn").addEventListener("click", refreshPrices);
 fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; }).catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 
-(async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); booted=true; })();
+(async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cCeil").value=state.cryptoCeiling; $("cFloor").value=state.cryptoFloor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); booted=true; })();
 </script>
 </body>
 </html>
