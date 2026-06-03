@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="glo2049" cx="0.7" cy="0.33" r="0.5"><stop offset="0" stop-color="#E3A94A" stop-opacity="0.22"></stop><stop offset="0.7" stop-color="#E3A94A" stop-opacity="0"></stop></radialGradient>
+    <linearGradient id="g2049" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#a7813c"></stop><stop offset="0.65" stop-color="#E3A94A"></stop><stop offset="1" stop-color="#f0c987"></stop>
+    </linearGradient>
+    <filter id="b2049" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="1.9" result="x"></feGaussianBlur><feMerge><feMergeNode in="x"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#13151b"></rect>
+  <rect width="64" height="64" rx="14" fill="url(#glo2049)"></rect>
+  <g transform="translate(5.76 5.76) scale(0.82)">
+    <line x1="11" y1="20" x2="53" y2="20" stroke="#E3A94A" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1.5 5.5" opacity="0.4" filter="url(#b2049)"></line>
+    <line x1="11" y1="20" x2="53" y2="20" stroke="#c79a4e" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1.5 5.5"></line>
+    <path d="M11 50 L24 37 L34 44 L49 20" stroke="url(#g2049)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle cx="49" cy="20" r="7.5" fill="#E3A94A" opacity="0.2"></circle>
+    <circle cx="49" cy="20" r="4.4" fill="#f4d49a" filter="url(#b2049)"></circle>
+    <circle cx="49" cy="20" r="2.2" fill="#fff3df"></circle>
+  </g>
+</svg>

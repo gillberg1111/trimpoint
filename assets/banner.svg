@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" fill="none">
+  <defs>
+    
+    <radialGradient id="bgg2049" cx="0.62" cy="0.2" r="0.6"><stop offset="0" stop-color="#E3A94A" stop-opacity="0.12"></stop><stop offset="0.7" stop-color="#E3A94A" stop-opacity="0"></stop></radialGradient>
+    <linearGradient id="g2049" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#a7813c"></stop><stop offset="0.65" stop-color="#E3A94A"></stop><stop offset="1" stop-color="#f0c987"></stop>
+    </linearGradient>
+    <filter id="b2049" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="1.9" result="x"></feGaussianBlur><feMerge><feMergeNode in="x"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+    </filter>
+  </defs>
+  <rect width="1280" height="400" fill="#13151b"></rect>
+  <rect width="1280" height="400" fill="url(#bgg2049)"></rect>
+  <g transform="translate(430 168) scale(1.05)">
+    <line x1="11" y1="20" x2="53" y2="20" stroke="#E3A94A" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1.5 5.5" opacity="0.4" filter="url(#b2049)"></line>
+    <line x1="11" y1="20" x2="53" y2="20" stroke="#c79a4e" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1.5 5.5"></line>
+    <path d="M11 50 L24 37 L34 44 L49 20" stroke="url(#g2049)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle cx="49" cy="20" r="7.5" fill="#E3A94A" opacity="0.2"></circle>
+    <circle cx="49" cy="20" r="4.4" fill="#f4d49a" filter="url(#b2049)"></circle>
+    <circle cx="49" cy="20" r="2.2" fill="#fff3df"></circle>
+  </g>
+  <text x="510" y="218" font-family="&#39;Fraunces&#39;,&#39;Georgia&#39;,serif" font-weight="500" font-size="78" letter-spacing="-0.01em"><tspan fill="#ECE7DD">Trim</tspan><tspan fill="#E3A94A" font-style="italic">Point</tspan></text>
+  <text x="513" y="262" font-family="&#39;IBM Plex Mono&#39;,&#39;SFMono-Regular&#39;,monospace" font-size="19" letter-spacing="0.28em" fill="#a7813c">DEFINED LIMITS. DISCIPLINED EXITS.</text>
+</svg>
