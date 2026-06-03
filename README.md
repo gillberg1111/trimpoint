@@ -9,12 +9,15 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 ## What it does
 
 - **One screen, your rules.** Each holding shows its weight, how far it is from its ceiling, and — if it's over — the trim your own plan calls for. Holdings below their floor read "underweight."
+- **Built for the phone — and the desktop.** Holdings are a tap-to-expand chip grid, so a thirty-name portfolio stays a short, scannable list and anything over its ceiling glows. On a wide screen it opens into a two-column dashboard, allocation donut and value trend side by side.
 - **Per-position limits.** Set a default ceiling/floor for everything, then override either on any single position (e.g. keep a speculative name under 5%, a core one under 20%).
+- **Crypto, kept separate.** Coins live in their own sleeve — their own doughnut, their own ceiling/floor — weighted against your crypto only, never blended with stocks. The section appears once you add a coin. *(For now, coin prices are entered by hand; the price refresh, daily snapshots, and alerts cover stocks — live crypto prices and alerts are on the roadmap.)*
 - **Notes.** Jot one line per position on *why* you set that ceiling; it shows on the card and rides along in the alert.
 - **Dry powder.** Set a minimum cash %; the dashboard and notifications flag it if cash drops below your floor.
 - **Drift & history.** A daily weight snapshot powers a sparkline and a 30-day "drift" readout on each position — so you can tell a temporary spike from a structural climb. Stored in one bounded file; no database.
 - **Optional login.** Gate the whole app behind a single password — or leave it open for LAN use.
 - **Your API key stays server-side.** The browser never sees it; price requests are proxied through the server.
+- **Today's move in context.** Each holding shows its previous close and the day's percent change beside the current price, so a ceiling reading is easy to size up at a glance.
 - **Notifications.** On a schedule, the server pings you (ntfy / Discord / any webhook) *only* when a holding crosses its ceiling or cash dips below your floor.
 - **Syncs across devices.** Config lives in one file on the server, so your phone and desktop see the same thing.
 
@@ -24,7 +27,7 @@ A single zero-dependency Node process (built-ins only — no frameworks, no data
 
 ```
 trimpoint/
-├── server.js                 # the whole backend (~210 lines, no dependencies)
+├── server.js                 # the whole backend (~250 lines, no dependencies)
 ├── public/
 │   ├── index.html            # the app
 │   ├── login.html            # the sign-in page (used only if a password is set)
