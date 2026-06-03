@@ -1,0 +1,12 @@
+services:
+  trimpoint:
+    build: .
+    # Or, after you push an image to GitHub Container Registry:
+    # image: ghcr.io/YOUR_GITHUB_USERNAME/trimpoint:latest
+    container_name: trimpoint
+    restart: unless-stopped
+    ports:
+      - "8080:8080"          # host:container — change the left side if 8080 is taken
+    env_file: .env
+    volumes:
+      - ./data:/data         # persists config.json; on Unraid use e.g. /mnt/user/appdata/trimpoint
