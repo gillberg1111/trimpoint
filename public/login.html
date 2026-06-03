@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrimPoint · Sign in</title>
+<meta name="theme-color" content="#13151b">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root{--bg:#13151b;--card:#1b1f28;--line:#2b313c;--ink:#ECE7DD;--muted:#878d99;--muted2:#5f6571;--gold:#E3A94A;--gold-dim:#a7813c;--danger:#d98a7a;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);}
+  body{font-family:'Hanken Grotesk',sans-serif;color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(120% 80% at 15% -10%,#1d212c 0%,rgba(29,33,44,0) 55%),radial-gradient(90% 60% at 100% 0%,#1a1d26 0%,rgba(26,29,38,0) 50%),var(--bg);-webkit-font-smoothing:antialiased;}
+  .box{width:100%;max-width:340px;}
+  .brand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:22px;}
+  .brand-mark{width:52px;height:52px;margin-bottom:12px;filter:drop-shadow(0 4px 14px rgba(227,169,74,.2));}
+  .brand-name{font-family:'Fraunces',serif;font-weight:500;font-size:30px;line-height:1;letter-spacing:-.01em;color:var(--ink);}
+  .brand-name em{font-style:italic;color:var(--gold);}
+  .brand-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--gold-dim);margin-top:9px;}
+  h1{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:16px;letter-spacing:.01em;}
+  .field{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:11px;}
+  .field label{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);margin-bottom:4px;}
+  .field input{background:transparent;border:0;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:15px;width:100%;outline:none;}
+  button{width:100%;background:var(--gold);border:0;color:#1a140a;font-family:'Hanken Grotesk',sans-serif;font-size:14.5px;font-weight:700;border-radius:12px;padding:13px;cursor:pointer;transition:.15s;}
+  button:hover{filter:brightness(1.07);} button:disabled{opacity:.6;cursor:default;}
+  .err{color:var(--danger);font-size:13px;margin-top:11px;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="g2049" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#a7813c"/><stop offset="0.65" stop-color="#E3A94A"/><stop offset="1" stop-color="#f0c987"/></linearGradient><filter id="b2049" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="1.9" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="11" y1="20" x2="53" y2="20" stroke="#E3A94A" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1.5 5.5" opacity="0.4" filter="url(#b2049)"/><line x1="11" y1="20" x2="53" y2="20" stroke="#c79a4e" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1.5 5.5"/><path d="M11 50 L24 37 L34 44 L49 20" stroke="url(#g2049)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="20" r="7.5" fill="#E3A94A" opacity="0.2"/><circle cx="49" cy="20" r="4.4" fill="#f4d49a" filter="url(#b2049)"/><circle cx="49" cy="20" r="2.2" fill="#fff3df"/></svg>
+    <div class="brand-name">Trim<em>Point</em></div>
+    <div class="brand-tag">DEFINED LIMITS. DISCIPLINED EXITS.</div>
+  </div>
+  <h1>Sign in</h1>
+  <div class="field"><label>Password</label><input id="pw" type="password" autocomplete="current-password" autofocus></div>
+  <button id="go">Unlock</button>
+  <div class="err" id="err"></div>
+</div>
+<script>
+  const pw = document.getElementById('pw'), go = document.getElementById('go'), err = document.getElementById('err');
+  async function submit(){
+    err.textContent = ''; go.disabled = true; go.textContent = 'Checking…';
+    try{
+      const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw.value }) });
+      if(r.ok){ location.href = '/'; return; }
+      err.textContent = 'Wrong password.';
+    }catch(e){ err.textContent = 'Could not reach the server.'; }
+    go.disabled = false; go.textContent = 'Unlock'; pw.select();
+  }
+  go.addEventListener('click', submit);
+  pw.addEventListener('keydown', e => { if(e.key === 'Enter') submit(); });
+</script>
+</body>
+</html>
