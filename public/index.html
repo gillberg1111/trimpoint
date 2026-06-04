@@ -222,7 +222,7 @@
 
   <div id="cryptoSection" style="display:none;">
     <hr class="rule">
-    <div class="panel-label">Crypto — measured within your crypto sleeve</div>
+    <div class="panel-label">Crypto — measured against your crypto only</div>
     <div class="overview" style="margin-bottom:18px;">
       <div class="donut-wrap">
         <svg id="cryptoDonut" viewBox="0 0 180 180"></svg>
@@ -230,12 +230,16 @@
       </div>
       <div class="ov-side"><div class="ov-cap" id="cryptoCap"></div><div class="legend" id="cryptoLegend"></div></div>
     </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn" id="cryptoRefreshBtn" style="flex:0 0 auto;border-color:rgba(227,169,74,.45);color:var(--gold);">↻ Update crypto prices</button>
+      <span id="cryptoRefreshStatus" style="font-size:12.5px;color:var(--muted2);line-height:1.4;"></span>
+    </div>
     <div class="panel-label">Crypto limits</div>
     <div class="dial">
       <div class="field"><div class="k">Ceiling</div><div class="v"><input id="cCeil" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
       <div class="field"><div class="k">Floor / trim-to</div><div class="v"><input id="cFloor" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
     </div>
-    <div class="hint">Separate ceiling and floor for crypto, measured against your crypto holdings only. Each coin can still override per-position. Crypto prices are entered by hand for now — Refresh updates stocks.</div>
+    <div class="hint">Separate ceiling and floor for crypto, measured against your crypto only. Each coin can still override per-position. "Update crypto prices" looks up live quotes by ticker — most coins resolve automatically; anything it can't find keeps the price you enter.</div>
     <div class="panel-label">Coins <span class="ph-hint">tap to expand</span></div>
     <div id="cryptoChips" class="chips"></div>
     <div id="cryptoRows"></div>
@@ -251,7 +255,8 @@
   <footer>
     <span class="em">Refresh</span> pulls live prices through your server (your API key stays server-side).<br>
     <span class="em">Notifications</span> ping you only when a holding crosses its ceiling or cash dips below your floor — and your note rides along.<br>
-    Informational only. It tracks your positions against thresholds <em>you</em> define; it makes no recommendations and is not financial advice.
+    Informational only. It tracks your positions against thresholds <em>you</em> define; it makes no recommendations and is not financial advice.<br>
+    Stock data by <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">Finnhub</a> · crypto data by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">CoinGecko</a>.
     <span id="logoutWrap" style="display:none;"><br><a href="#" id="logoutLink" style="color:var(--gold-dim);text-decoration:none;">Log out</a></span>
   </footer>
 </div>
@@ -260,6 +265,9 @@
 const $ = id => document.getElementById(id);
 const money = n => "$"+(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const money0 = n => "$"+Math.round(n||0).toLocaleString("en-US");
+const priceFmt = v => { v = Number(v); if(!isFinite(v)) v = 0; const a = Math.abs(v);
+  const max = (a > 0 && a < 1) ? Math.min(10, 3 - Math.floor(Math.log10(a))) : 2;
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: Math.max(2, max) }); };
 const num = v => { const x = parseFloat(v); return isFinite(x)?x:0; };
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -364,7 +372,7 @@ function animateValue(el, to){
 function paintRow(r, total, bankName, unitWord){
   const chip=$("chip-"+r.id);
   if(chip){ chip.className="chip "+r.kind+(openIds.has(r.id)?" open":""); const ct=$("ct-"+r.id); if(ct) ct.textContent=(r.ticker.trim().toUpperCase()||"—");
-    const cp=$("cp-"+r.id); if(cp) cp.textContent = num(r.price)>0 ? money(r.price) : "—";
+    const cp=$("cp-"+r.id); if(cp) cp.textContent = num(r.price)>0 ? priceFmt(r.price) : "—";
     const cw=$("cw-"+r.id); if(cw) cw.textContent = total>0 ? r.weight.toFixed(1)+"%" : "—"; }
   const card=$("card-"+r.id); if(!card) return;
   card.className = "pos "+r.kind + (card.classList.contains("enter")?" enter":"");
@@ -430,7 +438,7 @@ function render(){
 
 function buildCardsInto(hostId, list, gC, gF, amtLabel){
   const host=$(hostId); if(!host) return; host.innerHTML="";
-  const costLabel = amtLabel==="Units" ? "Cost / unit" : "Cost / sh";
+  const costLabel = amtLabel==="Units" ? "Avg cost / unit" : "Cost / sh";
   list.filter(p=>openIds.has(p.id)).forEach((p)=>{
     const el=document.createElement("div"); el.className="pos"; el.id="card-"+p.id;
     if(justOpened===p.id) el.classList.add("enter");
@@ -487,6 +495,25 @@ async function refreshPrices(){
   finally{ btn.disabled=false; btn.textContent=label; }
 }
 
+async function refreshCrypto(){
+  const btn=$("cryptoRefreshBtn"), status=$("cryptoRefreshStatus");
+  const tickers=state.crypto.map(p=>(p.ticker||"").trim().toUpperCase()).filter(t=>t&&t!=="NEW");
+  if(!tickers.length){ status.textContent="Add a coin first."; status.style.color="var(--muted2)"; return; }
+  const label=btn.textContent; btn.disabled=true; btn.textContent="Updating…"; status.textContent="Fetching latest prices…"; status.style.color="var(--muted)";
+  try{
+    const r=await fetch('/api/crypto?symbols='+encodeURIComponent(tickers.join(',')));
+    if(r.status===401){ location.href='/login'; return; }
+    if(!r.ok) throw new Error('crypto');
+    const prices=await r.json(); let updated=0, missed=0;
+    state.crypto.forEach(p=>{ const t=(p.ticker||"").trim().toUpperCase(); if(t in prices){ const q=prices[t]; if(q&&q.c!=null){ p.price=Number(q.c); updated++; } else missed++; } });
+    buildRows(); saveConfig();
+    const now=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+    status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — those coins may not be listed.";
+    status.style.color = updated ? "var(--green)" : "var(--muted2)";
+  }catch(e){ status.textContent="Couldn't reach the price service — check the server."; status.style.color="var(--muted2)"; }
+  finally{ btn.disabled=false; btn.textContent=label; }
+}
+
 document.addEventListener("input", e=>{
   const t=e.target;
   if(t.dataset && t.dataset.id){ const p=state.positions.find(x=>x.id==t.dataset.id)||state.crypto.find(x=>x.id==t.dataset.id); if(!p) return; p[t.dataset.f]=(t.dataset.f==="ticker")?t.value.toUpperCase():t.value; render(); }
@@ -519,6 +546,7 @@ legendEl.addEventListener("mouseout", e=>{ if(e.target.closest(".leg")){ documen
 $("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
 $("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
 $("refreshBtn").addEventListener("click", refreshPrices);
+$("cryptoRefreshBtn").addEventListener("click", refreshCrypto);
 fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; }).catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 
