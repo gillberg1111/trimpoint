@@ -125,7 +125,7 @@ TrimPoint is free and open-source, with no business model behind it. If it helps
 
 [☕ Buy me a coffee](https://buymeacoffee.com/gillberg1111)
 
-The same button floats in the corner of the app.
+The same button sits at the bottom of the app.
 
 ## Acknowledgments
 
