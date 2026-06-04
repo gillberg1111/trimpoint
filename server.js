@@ -13,6 +13,7 @@ const PUBLIC = join(ROOT, 'public');
 
 const {
   FINNHUB_KEY = '',
+  COINGECKO_KEY = '',                                  // optional free CoinGecko Demo key (higher rate limits)
   PORT = 8080,
   DATA_DIR = '/data',
   QUOTE_TTL = 45,
@@ -73,6 +74,80 @@ const quotes = async (symbols) =>
   Object.fromEntries(await Promise.all(symbols.map(async (s) => {
     try { return [s, await quote(s)]; } catch { return [s, null]; }
   })));
+
+// ---- crypto prices via CoinGecko (keyless; set COINGECKO_KEY for a free Demo key) ----
+const CG_IDS = {
+  BTC: 'bitcoin', ETH: 'ethereum', USDT: 'tether', BNB: 'binancecoin', SOL: 'solana',
+  USDC: 'usd-coin', XRP: 'ripple', ADA: 'cardano', DOGE: 'dogecoin', TRX: 'tron',
+  TON: 'the-open-network', AVAX: 'avalanche-2', SHIB: 'shiba-inu', DOT: 'polkadot',
+  LINK: 'chainlink', BCH: 'bitcoin-cash', NEAR: 'near', MATIC: 'matic-network',
+  POL: 'polygon-ecosystem-token', LTC: 'litecoin', ICP: 'internet-computer',
+  UNI: 'uniswap', DAI: 'dai', APT: 'aptos', ETC: 'ethereum-classic', XLM: 'stellar',
+  ATOM: 'cosmos', FIL: 'filecoin', ARB: 'arbitrum', IMX: 'immutable-x',
+  HBAR: 'hedera-hashgraph', VET: 'vechain', OP: 'optimism', INJ: 'injective-protocol',
+  GRT: 'the-graph', AAVE: 'aave', RNDR: 'render-token', RENDER: 'render-token',
+  MKR: 'maker', ALGO: 'algorand', QNT: 'quant-network', FTM: 'fantom', SAND: 'the-sandbox',
+  MANA: 'decentraland', AXS: 'axie-infinity', FLOW: 'flow', XTZ: 'tezos',
+  THETA: 'theta-token', CRO: 'crypto-com-chain', KAS: 'kaspa', SUI: 'sui',
+  SEI: 'sei-network', PEPE: 'pepe', WIF: 'dogwifcoin', BONK: 'bonk', FET: 'fetch-ai',
+  TIA: 'celestia', STX: 'blockstack', RUNE: 'thorchain', LDO: 'lido-dao',
+  WBTC: 'wrapped-bitcoin', LEO: 'leo-token', OKB: 'okb', EGLD: 'elrond-erd-2',
+  XMR: 'monero', GALA: 'gala', CHZ: 'chiliz', SNX: 'havven', ENS: 'ethereum-name-service',
+  JUP: 'jupiter-exchange-solana', PYTH: 'pyth-network', WLD: 'worldcoin-wld',
+  ENA: 'ethena', ONDO: 'ondo-finance', JTO: 'jito-governance-token', BTT: 'bittorrent',
+};
+const CG_HEADERS = COINGECKO_KEY ? { accept: 'application/json', 'x-cg-demo-api-key': COINGECKO_KEY } : { accept: 'application/json' };
+
+// resolve a ticker to a CoinGecko id: built-in map first, then the search API
+const idCache = new Map();                               // SYMBOL -> { id, at }
+const ID_NULL_TTL = 10 * 60 * 1000;                      // retry unresolved tickers after 10 min
+const resolveId = async (sym) => {
+  sym = sym.toUpperCase();
+  if (CG_IDS[sym]) return CG_IDS[sym];
+  const hit = idCache.get(sym);
+  if (hit && (hit.id || Date.now() - hit.at < ID_NULL_TTL)) return hit.id;
+  let id = null;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(sym)}`, { headers: CG_HEADERS });
+    if (r.ok) {
+      const coins = (await r.json()).coins || [];
+      const exact = coins.filter((c) => (c.symbol || '').toUpperCase() === sym);
+      const pool = (exact.length ? exact : coins).slice().sort((a, b) => (a.market_cap_rank ?? 1e9) - (b.market_cap_rank ?? 1e9));
+      id = pool.length ? pool[0].id : null;              // best market-cap match for that ticker
+    }
+  } catch {}
+  idCache.set(sym, { id, at: Date.now() });
+  return id;
+};
+const cryptoQuotes = async (symbols) => {
+  const want = [...new Set(symbols.map((s) => s.toUpperCase()))];
+  const out = {}; const need = [];
+  for (const s of want) {
+    const hit = cache.get('cg:' + s);
+    if (hit && Date.now() - hit.at < QUOTE_TTL * 1000) out[s] = hit.q;
+    else need.push(s);
+  }
+  if (need.length) {
+    const symId = {};
+    await Promise.all(need.map(async (s) => { symId[s] = await resolveId(s); }));
+    const ids = [...new Set(Object.values(symId).filter(Boolean))];
+    let d = {};
+    if (ids.length) {
+      try {
+        const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_24hr_change=true`, { headers: CG_HEADERS });
+        if (r.ok) d = await r.json();
+      } catch {}
+    }
+    for (const s of need) {
+      const row = symId[s] ? d[symId[s]] : null;
+      const c = row && typeof row.usd === 'number' && row.usd > 0 ? row.usd : null;
+      const q = c == null ? null : { c, pc: typeof row.usd_24h_change === 'number' ? +(c / (1 + row.usd_24h_change / 100)).toFixed(10) : null };
+      if (q) cache.set('cg:' + s, { q, at: Date.now() });
+      out[s] = q;
+    }
+  }
+  return Object.fromEntries(symbols.map((s) => [s, out[s.toUpperCase()] ?? null]));
+};
 
 // ---- notify only on a fresh threshold crossing ----
 const flagged = new Set();
@@ -226,6 +301,10 @@ http.createServer(async (req, res) => {
       if (!FINNHUB_KEY) return send(res, 500, { error: 'FINNHUB_KEY not set' });
       const symbols = (url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
       return send(res, 200, symbols.length ? await quotes(symbols) : {});
+    }
+    if (path === '/api/crypto') {
+      const symbols = (url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      return send(res, 200, symbols.length ? await cryptoQuotes(symbols) : {});
     }
     if (path === '/api/config' && req.method === 'GET') return send(res, 200, await readConfig());
     if (path === '/api/history' && req.method === 'GET') return send(res, 200, await readHistory());

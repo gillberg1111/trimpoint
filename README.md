@@ -11,7 +11,7 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 - **One screen, your rules.** Each holding shows its weight, how far it is from its ceiling, and — if it's over — the trim your own plan calls for. Holdings below their floor read "underweight."
 - **Built for the phone — and the desktop.** Holdings are a tap-to-expand chip grid, so a thirty-name portfolio stays a short, scannable list and anything over its ceiling glows. On a wide screen it opens into a two-column dashboard, allocation donut and value trend side by side.
 - **Per-position limits.** Set a default ceiling/floor for everything, then override either on any single position (e.g. keep a speculative name under 5%, a core one under 20%).
-- **Crypto, kept separate.** Coins live in their own sleeve — their own doughnut, their own ceiling/floor — weighted against your crypto only, never blended with stocks. The section appears once you add a coin. *(For now, coin prices are entered by hand; the price refresh, daily snapshots, and alerts cover stocks — live crypto prices and alerts are on the roadmap.)*
+- **Crypto, kept separate.** Coins live in their own section — their own doughnut, their own ceiling/floor — weighed against your crypto only, never blended with stocks. The section appears once you add a coin, with an **Update crypto prices** button that looks up live quotes by ticker — most coins on CoinGecko resolve automatically, and anything it can't find keeps the price you enter. *(Background snapshots and alerts still cover stocks; crypto history and crypto alerts are on the roadmap.)*
 - **Notes.** Jot one line per position on *why* you set that ceiling; it shows on the card and rides along in the alert.
 - **Dry powder.** Set a minimum cash %; the dashboard and notifications flag it if cash drops below your floor.
 - **Drift & history.** A daily weight snapshot powers a sparkline and a 30-day "drift" readout on each position — so you can tell a temporary spike from a structural climb. Stored in one bounded file; no database.
@@ -23,7 +23,7 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 
 ## How it works
 
-A single zero-dependency Node process (built-ins only — no frameworks, no database) serves the page, proxies [Finnhub](https://finnhub.io) quotes, reads/writes one `config.json`, runs a periodic threshold check, and (optionally) gates access with a signed session cookie. Prices are cached briefly to avoid redundant calls.
+A single zero-dependency Node process (built-ins only — no frameworks, no database) serves the page, proxies [Finnhub](https://finnhub.io) stock quotes and [CoinGecko](https://www.coingecko.com/en/api) crypto prices, reads/writes one `config.json`, runs a periodic threshold check, and (optionally) gates access with a signed session cookie. Prices are cached briefly to avoid redundant calls.
 
 ```
 trimpoint/
@@ -94,6 +94,7 @@ The included workflow (`.github/workflows/docker.yml`) builds the image and push
 | Var | Default | Notes |
 |---|---|---|
 | `FINNHUB_KEY` | — | **required**; server-side only |
+| `COINGECKO_KEY` | — | optional; free CoinGecko Demo key for higher crypto rate limits |
 | `PORT` | `8080` | |
 | `DATA_DIR` | `/data` | mount this; use `./data` for local `npm start` |
 | `QUOTE_TTL` | `45` | quote cache, seconds |
@@ -104,6 +105,8 @@ The included workflow (`.github/workflows/docker.yml`) builds the image and push
 | `AUTH_PASSWORD` | — | set to require login; blank = open |
 | `SESSION_SECRET` | random | set for logins that survive restarts |
 | `COOKIE_SECURE` | `false` | `true` when served over HTTPS |
+
+Stock data comes from [Finnhub](https://finnhub.io) and crypto data from [CoinGecko](https://www.coingecko.com/en/api), both credited in the app footer. Both free tiers are for personal, non-commercial use — Finnhub's signup asks you to confirm you're a non-professional user, and CoinGecko asks that its credit be displayed (it is). Running TrimPoint commercially would require a paid plan from each.
 
 ## Local development
 

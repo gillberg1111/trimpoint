@@ -7,17 +7,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.1.0] — 2026-06-03
 
 ### Added
-- **Crypto sleeve.** A separate section for cryptocurrency with its own doughnut, its own ceiling/floor, and an **+ Add crypto** button. Coin weights are measured *within the crypto sleeve only* — never blended with stocks — and the section stays hidden until you add a coin.
+- **Crypto section.** A separate section for cryptocurrency with its own doughnut, its own ceiling/floor, and an **+ Add crypto** button. Coin weights are measured *against your crypto only* — never blended with stocks — and the section stays hidden until you add a coin.
+- **Live crypto prices.** An **Update crypto prices** button (shown once you add a coin) looks up quotes by ticker via CoinGecko — no key required — resolving most listed coins automatically; anything it can't find keeps its manually entered price. An optional `COINGECKO_KEY` env var enables a free Demo key for higher rate limits.
+- **Adaptive price formatting.** Per-unit prices under $1 now show with enough significant figures that fractional-cent coins display their real price instead of rounding to $0.00.
 - **Tap-to-expand chip grid.** Holdings render as a compact, frosted-glass chip grid that's collapsed by default; tap a chip to open its full card. Anything over its ceiling glows. Each chip shows the ticker, its last-checked price, and a larger bold weight percentage.
 - **Responsive desktop layout.** On wider screens the app opens into a two-column dashboard — allocation doughnut and value-trend chart side by side, expanded cards two-up — and collapses back to a single column on the phone.
 - **Previous close on each holding.** Cards show the prior close and the day's percent change beside the current price.
 
 ### Changed
-- Refactored the allocation/trim engine so stocks and crypto run through one shared computation-and-render path — separate sleeves, identical behavior.
+- Data sources are now credited in the app footer (Finnhub for stocks, CoinGecko for crypto).
+- Refactored the allocation/trim engine so stocks and crypto run through one shared computation-and-render path — separate sections, identical behavior.
 - Server config defaults now include the crypto holdings and crypto ceiling/floor, so they persist and sync across devices like the rest of your settings.
 
 ### Notes
-- Coin prices are entered manually for now. The price refresh, the daily history snapshot, and threshold notifications currently cover stocks; live crypto prices and crypto alerts are planned.
+- The daily history snapshot and threshold notifications currently cover stocks; crypto history and crypto alerts are planned.
 
 ## [1.0.0] — 2026-06-02
 
