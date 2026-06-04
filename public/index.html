@@ -19,7 +19,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{background:var(--bg);}
-  body{font-family:'Hanken Grotesk',sans-serif;color:var(--ink);min-height:100vh;padding:22px 16px 80px;font-variant-numeric:tabular-nums;
+  body{font-family:'Hanken Grotesk',sans-serif;color:var(--ink);min-height:100vh;padding:22px 16px 52px;font-variant-numeric:tabular-nums;
     background:radial-gradient(130% 90% at 12% -12%,#20242f 0%,rgba(32,36,47,0) 52%),radial-gradient(95% 65% at 105% -5%,#1b1f2b 0%,rgba(27,31,43,0) 50%),var(--bg);-webkit-font-smoothing:antialiased;}
   body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.022;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
@@ -130,11 +130,11 @@
   .cashbar .g input{background:transparent;border:0;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;width:100%;outline:none;}
   .cash-note{font-size:12px;color:var(--muted2);margin:0 0 18px 2px;font-family:'IBM Plex Mono',monospace;}
   footer{margin-top:26px;padding-top:18px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--muted2);line-height:1.6;}
-  .bmc-float{position:fixed;bottom:18px;right:18px;z-index:60;display:inline-flex;align-items:center;gap:8px;font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.01em;color:var(--gold);text-decoration:none;padding:10px 15px;border-radius:999px;background:rgba(27,31,40,.55);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid rgba(227,169,74,.38);box-shadow:0 6px 22px rgba(0,0,0,.4);transition:transform .16s,border-color .2s,box-shadow .25s,background .2s;}
-  .bmc-float:hover{transform:translateY(-2px);border-color:rgba(227,169,74,.7);background:rgba(31,37,48,.72);box-shadow:0 10px 28px rgba(227,169,74,.18),0 6px 22px rgba(0,0,0,.42);}
-  .bmc-float:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
-  .bmc-float .cup{font-size:15px;line-height:1;}
-  @media (max-width:480px){ .bmc-float{bottom:14px;right:14px;padding:9px 13px;font-size:12.5px;} }
+  .support{display:flex;justify-content:center;margin-top:22px;}
+  .bmc{display:inline-flex;align-items:center;gap:8px;font-family:'Hanken Grotesk',sans-serif;font-size:13.5px;font-weight:600;letter-spacing:.01em;color:var(--gold);text-decoration:none;padding:11px 18px;border-radius:999px;background:rgba(27,31,40,.55);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border:1px solid rgba(227,169,74,.38);box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .16s,border-color .2s,box-shadow .25s,background .2s;}
+  .bmc:hover{transform:translateY(-2px);border-color:rgba(227,169,74,.7);background:rgba(31,37,48,.72);box-shadow:0 12px 30px rgba(227,169,74,.2),0 8px 24px rgba(0,0,0,.45);}
+  .bmc:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+  .bmc .cup{font-size:15px;line-height:1;}
   footer .em{color:var(--muted);}
   /* ---- desktop layout ---- */
   .dash{margin-bottom:14px;}
@@ -264,9 +264,8 @@
     Stock data by <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">Finnhub</a> · crypto data by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">CoinGecko</a>.
     <span id="logoutWrap" style="display:none;"><br><a href="#" id="logoutLink" style="color:var(--gold-dim);text-decoration:none;">Log out</a></span>
   </footer>
+  <div class="support"><a href="https://buymeacoffee.com/gillberg1111" target="_blank" rel="noopener noreferrer" class="bmc" aria-label="Buy me a coffee"><span class="cup" aria-hidden="true">☕</span> Buy me a coffee</a></div>
 </div>
-
-<a href="https://buymeacoffee.com/gillberg1111" target="_blank" rel="noopener noreferrer" class="bmc-float" aria-label="Buy me a coffee"><span class="cup" aria-hidden="true">☕</span> Buy me a coffee</a>
 
 <script>
 const $ = id => document.getElementById(id);
