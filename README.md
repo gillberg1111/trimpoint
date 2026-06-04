@@ -119,6 +119,20 @@ DATA_DIR=./data FINNHUB_KEY=xxxx npm start
 - Secrets (`FINNHUB_KEY`, `AUTH_PASSWORD`, `SESSION_SECRET`, notification URL) live in `.env` (git-ignored) and never reach the browser.
 - With a password set, every page and API route is gated except the login page and the health check. Still, if you expose it beyond your LAN, put it behind your own reverse proxy / HTTPS / VPN.
 
+## Support the project
+
+TrimPoint is free and open-source, with no business model behind it. If it helps you stay disciplined and you'd like to chip in:
+
+[☕ Buy me a coffee](https://buymeacoffee.com/gillberg1111)
+
+The same button floats in the corner of the app.
+
+## Acknowledgments
+
+TrimPoint was built collaboratively with [Claude](https://claude.ai), Anthropic's AI assistant, across many sessions. The code is largely Claude's; the investing approach it encodes, the rules, the brand direction, and the real-world testing are the maintainer's.
+
+Market data is provided by [Finnhub](https://finnhub.io) (stocks) and [CoinGecko](https://www.coingecko.com/en/api) (crypto).
+
 ## License
 
 MIT — see `LICENSE`.
