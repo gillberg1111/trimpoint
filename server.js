@@ -32,7 +32,7 @@ const CONFIG_FILE = join(DATA_DIR, 'config.json');
 const HISTORY_FILE = join(DATA_DIR, 'history.json');
 const HISTORY_ON = HISTORY !== 'off';
 const HIST_DAYS = 730;
-const DEFAULTS = { ceiling: 25, floor: 20, bank: '', cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30 };
+const DEFAULTS = { ceiling: 25, floor: 20, bank: '', banks: [], cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30 };
 
 // ---- effective per-position limits (overrides > scaled-from-global > global) ----
 const limits = (p, g) => {
@@ -180,14 +180,15 @@ const valuePortfolio = async (cfg) => {
 const checkThresholds = async (cfg, snap) => {
   if (NOTIFY_KIND === 'off' || !NOTIFY_URL || !snap) return;
   const { valued, total } = snap;
-  const bank = (cfg.bank || '').toUpperCase();
+  const banks = Array.isArray(cfg.banks) && cfg.banks.length ? cfg.banks.map(b => String(b.ticker || '').toUpperCase()).filter(Boolean) : (cfg.bank ? [String(cfg.bank).toUpperCase()] : []);
+  const dest = banks.length === 1 ? banks[0] : banks.length > 1 ? 'your bank funds' : '';
   for (const p of valued) {
-    if (p.sym === bank) continue;
+    if (banks.includes(p.sym)) continue;
     const pct = (p.value / total) * 100;
     if (pct > p.ceiling && !flagged.has(p.sym)) {
       flagged.add(p.sym);
       const sell = Math.max(1, Math.round((p.value - (p.floor / 100) * total) / (p.value / p.shares)));
-      let body = `${p.sym} is ${pct.toFixed(1)}% of the account. Your plan: trim ~${sell} share(s) toward ${p.floor}%${bank ? ` into ${bank}` : ''}.`;
+      let body = `${p.sym} is ${pct.toFixed(1)}% of the account. Your plan: trim ~${sell} share(s) toward ${p.floor}%${dest ? ` into ${dest}` : ''}.`;
       if (p.note) body += `\nNote: ${p.note}`;
       await notify(`${p.sym} crossed your ${p.ceiling}% ceiling`, body);
     } else if (pct <= p.ceiling) flagged.delete(p.sym);
