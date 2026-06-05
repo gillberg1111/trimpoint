@@ -4,6 +4,20 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-06-05
+
+### Added
+- **Multi-fund bank.** The bank — where trims land, exempt from the ceiling — can now hold more than one fund. Add several (say a three-fund 80 / 10 / 10) and give each a target weight; the bank panel shows every fund's live share of the bank and tracks how far it has drifted from its target.
+- **Rebalancing guidance.** When a fund drifts past its tolerance band (the 5/25 rule), its row colors by *direction* — warm if it's **over** target (gold → red, ▲), cool if it's **under** (teal → blue, ▼) — and spells out the exact move: e.g. "Trim ~$1,240 (≈ 38 sh) to reach 80%" or "Add ~$320 to reach 10%."
+- **Targets readout.** A live indicator in the bank panel flags whether your fund targets add up to 100%.
+
+### Changed
+- **Varied allocation palette.** The doughnut's near-identical gold shades are replaced with a distinct, theme-coherent set — gold, teal, pink, green, orange, purple, yellow, blue, coral, indigo — ordered so neighboring slices contrast. Bank funds stay blue (they're one group); cash stays grey.
+- A single nominated bank still behaves exactly as before, and existing configurations migrate automatically to the new multi-fund model — no action needed.
+
+### Notes
+- Rebalance amounts size each fund to its target share of the *current* bank total, so they're exact when your targets sum to 100%.
+
 ## [1.1.0] — 2026-06-03
 
 ### Added
@@ -13,6 +27,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Tap-to-expand chip grid.** Holdings render as a compact, frosted-glass chip grid that's collapsed by default; tap a chip to open its full card. Anything over its ceiling glows. Each chip shows the ticker, its last-checked price, and a larger bold weight percentage.
 - **Responsive desktop layout.** On wider screens the app opens into a two-column dashboard — allocation doughnut and value-trend chart side by side, expanded cards two-up — and collapses back to a single column on the phone.
 - **Previous close on each holding.** Cards show the prior close and the day's percent change beside the current price.
+- **Support link.** A Buy Me a Coffee button at the foot of the app for anyone who wants to chip in.
 
 ### Changed
 - Data sources are now credited in the app footer (Finnhub for stocks, CoinGecko for crypto).
@@ -40,5 +55,6 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.2.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.0.0

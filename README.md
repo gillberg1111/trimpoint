@@ -11,6 +11,7 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 - **One screen, your rules.** Each holding shows its weight, how far it is from its ceiling, and — if it's over — the trim your own plan calls for. Holdings below their floor read "underweight."
 - **Built for the phone — and the desktop.** Holdings are a tap-to-expand chip grid, so a thirty-name portfolio stays a short, scannable list and anything over its ceiling glows. On a wide screen it opens into a two-column dashboard, allocation donut and value trend side by side.
 - **Per-position limits.** Set a default ceiling/floor for everything, then override either on any single position (e.g. keep a speculative name under 5%, a core one under 20%).
+- **Bank, where trims land.** Nominate one holding (e.g. a broad-market ETF) as the destination for trims — it's exempt from the ceiling. Or build a multi-fund bank with target weights (say a three-fund 80 / 10 / 10): each fund shows its live share of the bank, and when one drifts past its tolerance band the app spells out the exact trim or top-up to bring it back — over-target funds run warm, under-target funds cool.
 - **Crypto, kept separate.** Coins live in their own section — their own doughnut, their own ceiling/floor — weighed against your crypto only, never blended with stocks. The section appears once you add a coin, with an **Update crypto prices** button that looks up live quotes by ticker — most coins on CoinGecko resolve automatically, and anything it can't find keeps the price you enter. *(Background snapshots and alerts still cover stocks; crypto history and crypto alerts are on the roadmap.)*
 - **Notes.** Jot one line per position on *why* you set that ceiling; it shows on the card and rides along in the alert.
 - **Dry powder.** Set a minimum cash %; the dashboard and notifications flag it if cash drops below your floor.
@@ -27,7 +28,7 @@ A single zero-dependency Node process (built-ins only — no frameworks, no data
 
 ```
 trimpoint/
-├── server.js                 # the whole backend (~250 lines, no dependencies)
+├── server.js                 # the whole backend (~330 lines, no dependencies)
 ├── public/
 │   ├── index.html            # the app
 │   ├── login.html            # the sign-in page (used only if a password is set)
