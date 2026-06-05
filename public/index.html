@@ -80,19 +80,24 @@
   .dial .field .v{display:flex;align-items:baseline;gap:2px;}
   .dial input{background:transparent;border:0;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;width:100%;outline:none;}
   .dial .pct{color:var(--gold-dim);font-family:'IBM Plex Mono',monospace;font-size:15px;}
-  .bank-add{background:var(--card);border:1px solid var(--line);color:var(--blue);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;border-radius:9px;padding:8px 11px;outline:none;margin-top:2px;cursor:pointer;}
+  .bank-add{display:block;width:100%;box-sizing:border-box;background:transparent;border:1px dashed var(--line);color:var(--muted);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:13px;border-radius:10px;padding:11px 12px;outline:none;cursor:pointer;transition:border-color .2s,color .2s;}
+  .bank-add:hover{border-color:var(--gold-dim);color:var(--gold);}
   #bankRows{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
-  .bank-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:11px;padding:10px 13px;}
+  .bank-item{display:flex;flex-direction:column;gap:7px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:11px;padding:10px 13px;}
+  .bk-main{display:flex;align-items:center;gap:10px;}
   .bank-item .bk-tk{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--blue);min-width:54px;}
   .bank-item .bk-note{font-size:12.5px;color:var(--muted2);flex:1;}
   .bank-item .bk-target{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;flex:1;}
   .bank-item .bk-target input{width:52px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:7px;padding:5px 7px;text-align:right;outline:none;}
-  .bank-item .bk-actual{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--ink);}
-  .bank-item .bk-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);}
+  .bank-item .bk-actual{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;}
+  .bank-item .bk-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);flex:0 0 auto;}
+  .bank-item .bk-fix{font-size:12px;line-height:1.4;color:var(--muted);padding-left:2px;}
+  .bank-item .bk-rm{background:transparent;border:0;color:var(--muted2);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;transition:color .15s;flex:0 0 auto;} .bank-item .bk-rm:hover{color:var(--danger);}
   .bank-item.ok{border-left-color:var(--green);} .bank-item.ok .bk-dot{background:var(--green);box-shadow:0 0 8px var(--green);} .bank-item.ok .bk-actual{color:var(--green);}
-  .bank-item.warn{border-left-color:var(--gold);} .bank-item.warn .bk-dot{background:var(--gold);box-shadow:0 0 8px var(--gold);} .bank-item.warn .bk-actual{color:var(--gold);}
-  .bank-item.off{border-left-color:var(--danger);} .bank-item.off .bk-dot{background:var(--danger);box-shadow:0 0 9px var(--danger);} .bank-item.off .bk-actual{color:var(--danger);}
-  .bank-item .bk-rm{background:transparent;border:0;color:var(--muted2);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;transition:color .15s;} .bank-item .bk-rm:hover{color:var(--danger);}
+  .bank-item.over-warn{border-left-color:var(--gold);} .bank-item.over-warn .bk-dot{background:var(--gold);box-shadow:0 0 8px var(--gold);} .bank-item.over-warn .bk-actual,.bank-item.over-warn .bk-fix{color:var(--gold);}
+  .bank-item.over-off{border-left-color:var(--danger);} .bank-item.over-off .bk-dot{background:var(--danger);box-shadow:0 0 9px var(--danger);} .bank-item.over-off .bk-actual,.bank-item.over-off .bk-fix{color:var(--danger);}
+  .bank-item.under-warn{border-left-color:#6FC2C9;} .bank-item.under-warn .bk-dot{background:#6FC2C9;box-shadow:0 0 8px #6FC2C9;} .bank-item.under-warn .bk-actual,.bank-item.under-warn .bk-fix{color:#6FC2C9;}
+  .bank-item.under-off{border-left-color:#7FA8E6;} .bank-item.under-off .bk-dot{background:#7FA8E6;box-shadow:0 0 9px #7FA8E6;} .bank-item.under-off .bk-actual,.bank-item.under-off .bk-fix{color:#7FA8E6;}
   .hint{font-size:12.5px;color:var(--muted2);line-height:1.5;margin-top:9px;}
 
   .pos{background:linear-gradient(180deg,var(--card),#191d25);border:1px solid var(--line-soft);border-left:3px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:11px;transition:transform .16s,border-color .2s,box-shadow .2s;}
@@ -228,7 +233,7 @@
 
   <div class="panel-label">Bank — where trims land, exempt from ceiling</div>
   <div id="bankRows"></div>
-  <select id="bankAdd" class="bank-add"><option value="">+ add a fund…</option></select>
+  <select id="bankAdd" class="bank-add"><option value="">+ Add a fund to your bank</option></select>
   <div class="hint" id="bankHint">Pick the holding your trims flow into. Add a second fund to track a target split — e.g. a three-fund 80 / 10 / 10.</div>
 
   <hr class="rule">
@@ -364,13 +369,15 @@ function computeCrypto(){
   return computeList(state.crypto, 0, num(state.cryptoCeiling), num(state.cryptoFloor), new Set());
 }
 function bankSet(){ return new Set(state.banks.map(b=>(b.ticker||"").trim().toUpperCase()).filter(Boolean)); }
-function bankTier(actual, target){ if(!(target>0)) return "ok"; const band=Math.min(5, target*0.25), dev=Math.abs(actual-target); return dev<=band/2 ? "ok" : dev<=band ? "warn" : "off"; }
+function bankTier(actual, target){ if(!(target>0)) return ""; const band=Math.min(5, target*0.25), dev=actual-target, a=Math.abs(dev); if(a<=band/2) return "ok"; const sev=a<=band?"warn":"off"; return (dev>0?"over-":"under-")+sev; }
 function computeBank(){
-  const items = state.banks.map(b=>{ const tk=(b.ticker||"").trim().toUpperCase(); const pos=state.positions.find(p=>p.ticker.trim().toUpperCase()===tk); return { ticker:tk, target:num(b.target), mv: pos?num(pos.shares)*num(pos.price):0 }; });
+  const items = state.banks.map(b=>{ const tk=(b.ticker||"").trim().toUpperCase(); const pos=state.positions.find(p=>p.ticker.trim().toUpperCase()===tk); return { ticker:tk, target:num(b.target), mv: pos?num(pos.shares)*num(pos.price):0, price: pos?num(pos.price):0 }; });
   const total = items.reduce((s,i)=>s+i.mv,0);
-  items.forEach(i=>{ i.within = total>0?i.mv/total*100:0; i.tier = bankTier(i.within, i.target); });
+  items.forEach(i=>{ i.within = total>0?i.mv/total*100:0; i.tier = bankTier(i.within, i.target); i.delta = (total>0 && i.target>0) ? (i.target/100)*total - i.mv : 0; });
   return { items, total };
 }
+function bankActual(it){ const arrow = it.tier.startsWith("over")?"▲ ":it.tier.startsWith("under")?"▼ ":""; return `<span class="bk-dot"></span>${arrow}${it.within.toFixed(1)}%`; }
+function bankFix(it){ if(it.tier==="ok" || !(it.target>0)) return ""; const add=it.delta>0, amt=Math.abs(it.delta), sh=it.price>0?Math.round(amt/it.price):0; return `${add?"Add":"Trim"} ~${money0(amt)}${sh?` (≈ ${sh} sh)`:""} to reach ${it.target}%`; }
 
 function renderDonut(svgId, segs, total){
   const svg=$(svgId); const cx=90,cy=90,r=64,sw=20,C=2*Math.PI*r;
@@ -506,9 +513,9 @@ function buildRows(){
 }
 function buildBankAdd(){
   const sel=$("bankAdd"); if(!sel) return; const set=bankSet();
-  sel.innerHTML = `<option value="">+ add a fund…</option>` + state.positions
-    .filter(p=>p.ticker.trim() && !set.has(p.ticker.trim().toUpperCase()))
-    .map(p=>{ const t=esc(p.ticker.trim().toUpperCase()); return `<option value="${t}">${t}</option>`; }).join('');
+  const opts = state.positions.filter(p=>p.ticker.trim() && !set.has(p.ticker.trim().toUpperCase()));
+  sel.style.display = opts.length ? '' : 'none';
+  sel.innerHTML = `<option value="">+ Add a fund to your bank</option>` + opts.map(p=>{ const t=esc(p.ticker.trim().toUpperCase()); return `<option value="${t}">${t}</option>`; }).join('');
 }
 function renderBank(){
   const host=$("bankRows"); if(!host) return;
@@ -516,22 +523,25 @@ function renderBank(){
   if(!items.length) host.innerHTML=`<div class="empty" style="padding:8px 0;">No bank set — trims have no destination yet. Add a fund below.</div>`;
   else host.innerHTML = items.map((it,idx)=>{
     const rm=`<button class="bk-rm" data-bankrm="${idx}" title="remove">×</button>`;
-    if(!multi) return `<div class="bank-item"><span class="bk-tk">${esc(it.ticker||"—")}</span><span class="bk-note">where trims land</span>${rm}</div>`;
-    const act = total>0 ? it.within.toFixed(1)+"%" : "—";
-    return `<div class="bank-item ${it.tier}"><span class="bk-tk">${esc(it.ticker||"—")}</span><label class="bk-target">target <input data-banktgt="${idx}" type="number" inputmode="decimal" value="${it.target||''}">%</label><span class="bk-actual"><span class="bk-dot"></span>${act}</span>${rm}</div>`;
+    if(!multi) return `<div class="bank-item"><div class="bk-main"><span class="bk-tk">${esc(it.ticker||"—")}</span><span class="bk-note">where trims land</span>${rm}</div></div>`;
+    const fix=bankFix(it);
+    return `<div class="bank-item ${it.tier}"><div class="bk-main"><span class="bk-tk">${esc(it.ticker||"—")}</span><label class="bk-target">target <input data-banktgt="${idx}" type="number" inputmode="decimal" value="${it.target||''}">%</label><span class="bk-actual">${bankActual(it)}</span>${rm}</div><div class="bk-fix"${fix?'':' style="display:none;"'}>${fix}</div></div>`;
   }).join('');
   if(hint){
     if(multi){ const sum=items.reduce((s,i)=>s+num(i.target),0), ok=Math.abs(sum-100)<0.5;
-      hint.innerHTML = `Each fund shows its share of the bank, colored by drift from target (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
+      hint.innerHTML = `Each fund shows its share of the bank, with a nudge on how to rebalance when it drifts (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
     else hint.textContent = "Pick the holding your trims flow into. Add a second fund to track a target split — e.g. a three-fund 80 / 10 / 10.";
   }
   buildBankAdd();
 }
 function updateBankColors(){
   const { items } = computeBank();
-  document.querySelectorAll('#bankRows .bank-item').forEach((el,idx)=>{ const it=items[idx]; if(it) el.className='bank-item '+it.tier; });
+  document.querySelectorAll('#bankRows .bank-item').forEach((el,idx)=>{ const it=items[idx]; if(!it) return;
+    el.className='bank-item '+it.tier;
+    const act=el.querySelector('.bk-actual'); if(act) act.innerHTML=bankActual(it);
+    const fix=el.querySelector('.bk-fix'); if(fix){ const t=bankFix(it); fix.textContent=t; fix.style.display=t?'':'none'; } });
   const hint=$("bankHint"); if(hint && items.length>1){ const sum=items.reduce((s,i)=>s+num(i.target),0), ok=Math.abs(sum-100)<0.5;
-    hint.innerHTML = `Each fund shows its share of the bank, colored by drift from target (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
+    hint.innerHTML = `Each fund shows its share of the bank, with a nudge on how to rebalance when it drifts (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
 }
 
 async function refreshPrices(){
