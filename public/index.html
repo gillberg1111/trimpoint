@@ -80,8 +80,19 @@
   .dial .field .v{display:flex;align-items:baseline;gap:2px;}
   .dial input{background:transparent;border:0;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;width:100%;outline:none;}
   .dial .pct{color:var(--gold-dim);font-family:'IBM Plex Mono',monospace;font-size:15px;}
-  .bank-row{display:flex;align-items:center;gap:9px;margin:14px 0 4px;font-size:13px;color:var(--muted);}
-  .bank-row select{background:var(--card);border:1px solid var(--line);color:var(--blue);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;border-radius:8px;padding:6px 9px;outline:none;}
+  .bank-add{background:var(--card);border:1px solid var(--line);color:var(--blue);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;border-radius:9px;padding:8px 11px;outline:none;margin-top:2px;cursor:pointer;}
+  #bankRows{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .bank-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:11px;padding:10px 13px;}
+  .bank-item .bk-tk{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--blue);min-width:54px;}
+  .bank-item .bk-note{font-size:12.5px;color:var(--muted2);flex:1;}
+  .bank-item .bk-target{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;flex:1;}
+  .bank-item .bk-target input{width:52px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:7px;padding:5px 7px;text-align:right;outline:none;}
+  .bank-item .bk-actual{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--ink);}
+  .bank-item .bk-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);}
+  .bank-item.ok{border-left-color:var(--green);} .bank-item.ok .bk-dot{background:var(--green);box-shadow:0 0 8px var(--green);} .bank-item.ok .bk-actual{color:var(--green);}
+  .bank-item.warn{border-left-color:var(--gold);} .bank-item.warn .bk-dot{background:var(--gold);box-shadow:0 0 8px var(--gold);} .bank-item.warn .bk-actual{color:var(--gold);}
+  .bank-item.off{border-left-color:var(--danger);} .bank-item.off .bk-dot{background:var(--danger);box-shadow:0 0 9px var(--danger);} .bank-item.off .bk-actual{color:var(--danger);}
+  .bank-item .bk-rm{background:transparent;border:0;color:var(--muted2);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;transition:color .15s;} .bank-item .bk-rm:hover{color:var(--danger);}
   .hint{font-size:12.5px;color:var(--muted2);line-height:1.5;margin-top:9px;}
 
   .pos{background:linear-gradient(180deg,var(--card),#191d25);border:1px solid var(--line-soft);border-left:3px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:11px;transition:transform .16s,border-color .2s,box-shadow .2s;}
@@ -213,8 +224,12 @@
     <div class="field"><div class="k">Ceiling</div><div class="v"><input id="ceil" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
     <div class="field"><div class="k">Floor / trim-to</div><div class="v"><input id="floor" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
   </div>
-  <div class="bank-row">Bank (where trims land, exempt from ceiling): <select id="bankSel"></select></div>
   <div class="hint">Ceiling = the weight that triggers a trim; floor = where the trim lands. Each position can override either — and a per-position floor also flags the holding "underweight" if it dips below. Changes sync across your devices.</div>
+
+  <div class="panel-label">Bank — where trims land, exempt from ceiling</div>
+  <div id="bankRows"></div>
+  <select id="bankAdd" class="bank-add"><option value="">+ add a fund…</option></select>
+  <div class="hint" id="bankHint">Pick the holding your trims flow into. Add a second fund to track a target split — e.g. a three-fund 80 / 10 / 10.</div>
 
   <hr class="rule">
   <div class="panel-label">Positions <span class="ph-hint">tap a holding to expand</span></div>
@@ -277,24 +292,27 @@ const priceFmt = v => { v = Number(v); if(!isFinite(v)) v = 0; const a = Math.ab
 const num = v => { const x = parseFloat(v); return isFinite(x)?x:0; };
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const PALETTE=['#E3A94A','#E0B15C','#CBA46C','#A9A971','#84B58D','#6FBFA9','#6FA9C7','#9B96C9','#C98AA1','#C98A6B'];
+const PALETTE=['#E3A94A','#6FC2C9','#E588A6','#7FC795','#E89D66','#B98BD6','#D9CF63','#6FA8E0','#E0846E','#9A8CE0'];
 const BANK_COLOR='#84A9DA', CASH_COLOR='#626975';
 
-let state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30 };
+let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30 };
 let nextId = 1, saveTimer = null, history = [], booted = false;
 const openIds = new Set(); let justOpened = null;
 
 async function loadConfig(){
-  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, ...(await r.json()) }; }catch(e){}
+  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, ...(await r.json()) }; }catch(e){}
   const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", note:p.note||"" });
   state.positions = (state.positions||[]).map(mapPos);
   state.crypto = (state.crypto||[]).map(mapPos);
+  state.banks = Array.isArray(state.banks) && state.banks.length ? state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:b.target||"" }))
+    : (state.bank ? [{ ticker:String(state.bank).toUpperCase(), target:"" }] : []);
 }
 function saveConfig(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
     const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, note:(p.note||"").trim() });
-    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:state.bank, cash:num(state.cash), minCash:num(state.minCash), cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
+    const banks = state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:num(b.target)||0 })).filter(b=>b.ticker);
+    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:banks[0]?banks[0].ticker:"", banks, cash:num(state.cash), minCash:num(state.minCash), cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
       positions: state.positions.map(mapPos), crypto: state.crypto.map(mapPos) };
     fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
   }, 400);
@@ -317,13 +335,13 @@ function driftFor(sym, current){
   return { pts:+(current-base.v).toFixed(1), days, vals: series.map(s=>s.v).concat(current) };
 }
 
-function computeList(list, cashVal, gC, gF, bankName){
+function computeList(list, cashVal, gC, gF, bankSet){
   const rows = list.map(p => ({ ...p, mv:num(p.shares)*num(p.price) }));
   const total = rows.reduce((s,p)=>s+p.mv,0) + num(cashVal);
   let overCount = 0;
   const out = rows.map(p=>{
     const weight = total>0 ? (p.mv/total)*100 : 0;
-    const isBank = !!bankName && p.ticker.trim()!=="" && p.ticker.trim().toUpperCase()===(bankName||"").trim().toUpperCase();
+    const isBank = !!bankSet && p.ticker.trim()!=="" && bankSet.has(p.ticker.trim().toUpperCase());
     const mult = num(p.cost)>0 ? num(p.price)/num(p.cost) : 0;
     const ratio = gC>0?gF/gC:0.8, hasC = num(p.ceiling)>0;
     const effCeil = hasC ? num(p.ceiling) : gC;
@@ -338,12 +356,20 @@ function computeList(list, cashVal, gC, gF, bankName){
   return { rows:out, total, overCount };
 }
 function compute(){
-  const { rows, total, overCount } = computeList(state.positions, state.cash, num(state.ceiling), num(state.floor), state.bank);
+  const { rows, total, overCount } = computeList(state.positions, state.cash, num(state.ceiling), num(state.floor), bankSet());
   const minCash = num(state.minCash), cashPct = total>0 ? (num(state.cash)/total)*100 : 0;
   return { rows, total, overCount, cashPct, minCash, cashLow: minCash>0 && cashPct<minCash };
 }
 function computeCrypto(){
-  return computeList(state.crypto, 0, num(state.cryptoCeiling), num(state.cryptoFloor), "");
+  return computeList(state.crypto, 0, num(state.cryptoCeiling), num(state.cryptoFloor), new Set());
+}
+function bankSet(){ return new Set(state.banks.map(b=>(b.ticker||"").trim().toUpperCase()).filter(Boolean)); }
+function bankTier(actual, target){ if(!(target>0)) return "ok"; const band=Math.min(5, target*0.25), dev=Math.abs(actual-target); return dev<=band/2 ? "ok" : dev<=band ? "warn" : "off"; }
+function computeBank(){
+  const items = state.banks.map(b=>{ const tk=(b.ticker||"").trim().toUpperCase(); const pos=state.positions.find(p=>p.ticker.trim().toUpperCase()===tk); return { ticker:tk, target:num(b.target), mv: pos?num(pos.shares)*num(pos.price):0 }; });
+  const total = items.reduce((s,i)=>s+i.mv,0);
+  items.forEach(i=>{ i.within = total>0?i.mv/total*100:0; i.tier = bankTier(i.within, i.target); });
+  return { items, total };
 }
 
 function renderDonut(svgId, segs, total){
@@ -428,8 +454,10 @@ function render(){
     else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; }
   }
 
-  stock.rows.forEach(r=>paintRow(r, stock.total, state.bank, "share"));
+  const bankLabel = state.banks.length===1 ? (state.banks[0].ticker||"").toUpperCase() : state.banks.length>1 ? "your bank funds" : "";
+  stock.rows.forEach(r=>paintRow(r, stock.total, bankLabel, "share"));
   crypto.rows.forEach(r=>paintRow(r, crypto.total, "", "unit"));
+  renderBank();
 
   $("cashNote").textContent = stock.total<=0 ? "" : stock.minCash>0
     ? `Cash ${stock.cashPct.toFixed(1)}% · ${stock.cashLow?`below your ${stock.minCash}% floor`:`above your ${stock.minCash}% floor`}`
@@ -474,12 +502,36 @@ function buildRows(){
   justOpened=null;
   buildChipsInto("chips", state.positions, "No positions yet — tap <b>+ Add position</b>.");
   buildChipsInto("cryptoChips", state.crypto, "");
-  buildBankOptions(); render();
+  render();
 }
-function buildBankOptions(){
-  const sel=$("bankSel"); sel.innerHTML=`<option value="">— none —</option>`;
-  state.positions.forEach(p=>{ if(!p.ticker.trim()) return; const o=document.createElement("option"); o.value=p.ticker; o.textContent=p.ticker;
-    if(p.ticker.trim().toUpperCase()===(state.bank||"").trim().toUpperCase()) o.selected=true; sel.appendChild(o); });
+function buildBankAdd(){
+  const sel=$("bankAdd"); if(!sel) return; const set=bankSet();
+  sel.innerHTML = `<option value="">+ add a fund…</option>` + state.positions
+    .filter(p=>p.ticker.trim() && !set.has(p.ticker.trim().toUpperCase()))
+    .map(p=>{ const t=esc(p.ticker.trim().toUpperCase()); return `<option value="${t}">${t}</option>`; }).join('');
+}
+function renderBank(){
+  const host=$("bankRows"); if(!host) return;
+  const { items, total } = computeBank(), multi = items.length>1, hint=$("bankHint");
+  if(!items.length) host.innerHTML=`<div class="empty" style="padding:8px 0;">No bank set — trims have no destination yet. Add a fund below.</div>`;
+  else host.innerHTML = items.map((it,idx)=>{
+    const rm=`<button class="bk-rm" data-bankrm="${idx}" title="remove">×</button>`;
+    if(!multi) return `<div class="bank-item"><span class="bk-tk">${esc(it.ticker||"—")}</span><span class="bk-note">where trims land</span>${rm}</div>`;
+    const act = total>0 ? it.within.toFixed(1)+"%" : "—";
+    return `<div class="bank-item ${it.tier}"><span class="bk-tk">${esc(it.ticker||"—")}</span><label class="bk-target">target <input data-banktgt="${idx}" type="number" inputmode="decimal" value="${it.target||''}">%</label><span class="bk-actual"><span class="bk-dot"></span>${act}</span>${rm}</div>`;
+  }).join('');
+  if(hint){
+    if(multi){ const sum=items.reduce((s,i)=>s+num(i.target),0), ok=Math.abs(sum-100)<0.5;
+      hint.innerHTML = `Each fund shows its share of the bank, colored by drift from target (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
+    else hint.textContent = "Pick the holding your trims flow into. Add a second fund to track a target split — e.g. a three-fund 80 / 10 / 10.";
+  }
+  buildBankAdd();
+}
+function updateBankColors(){
+  const { items } = computeBank();
+  document.querySelectorAll('#bankRows .bank-item').forEach((el,idx)=>{ const it=items[idx]; if(it) el.className='bank-item '+it.tier; });
+  const hint=$("bankHint"); if(hint && items.length>1){ const sum=items.reduce((s,i)=>s+num(i.target),0), ok=Math.abs(sum-100)<0.5;
+    hint.innerHTML = `Each fund shows its share of the bank, colored by drift from target (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
 }
 
 async function refreshPrices(){
@@ -523,6 +575,7 @@ async function refreshCrypto(){
 document.addEventListener("input", e=>{
   const t=e.target;
   if(t.dataset && t.dataset.id){ const p=state.positions.find(x=>x.id==t.dataset.id)||state.crypto.find(x=>x.id==t.dataset.id); if(!p) return; p[t.dataset.f]=(t.dataset.f==="ticker")?t.value.toUpperCase():t.value; render(); }
+  else if(t.dataset && t.dataset.banktgt!==undefined){ const i=+t.dataset.banktgt; if(state.banks[i]) state.banks[i].target=t.value; updateBankColors(); }
   else if(t.id==="ceil"){ state.ceiling=t.value; render(); }
   else if(t.id==="floor"){ state.floor=t.value; render(); }
   else if(t.id==="cCeil"){ state.cryptoCeiling=t.value; render(); }
@@ -531,8 +584,8 @@ document.addEventListener("input", e=>{
   else if(t.id==="minCash"){ state.minCash=t.value; render(); }
 });
 document.addEventListener("change", e=>{
-  if(e.target.id==="bankSel"){ state.bank=e.target.value; render(); }
-  if(e.target.dataset && e.target.dataset.f==="ticker") buildBankOptions();
+  if(e.target.id==="bankAdd" && e.target.value){ const tk=e.target.value.toUpperCase(); if(!bankSet().has(tk)){ state.banks.push({ ticker:tk, target:"" }); render(); } e.target.value=""; }
+  if(e.target.dataset && e.target.dataset.f==="ticker") buildBankAdd();
   saveConfig();
 });
 document.addEventListener("click", e=>{
@@ -540,7 +593,9 @@ document.addEventListener("click", e=>{
   const adv=t.closest&&t.closest("[data-adv]");
   const rm=t.closest&&t.closest("[data-rm]");
   const op=t.closest&&t.closest("[data-open]");
+  const bankrm=t.closest&&t.closest("[data-bankrm]");
   if(adv){ const id=adv.dataset.adv; $("adv-"+id).classList.toggle("open"); adv.textContent = $("adv-"+id).classList.contains("open") ? "− rules & note" : "＋ rules & note"; }
+  else if(bankrm){ state.banks.splice(+bankrm.dataset.bankrm,1); render(); saveConfig(); }
   else if(rm){ const id=rm.dataset.rm; state.positions=state.positions.filter(p=>p.id!=id); state.crypto=state.crypto.filter(p=>p.id!=id); openIds.delete(+id); buildRows(); saveConfig(); }
   else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } buildRows(); }
 });
