@@ -4,6 +4,19 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-06-09
+
+### Fixed
+- **Crash-safe config writes.** `config.json` and `history.json` are now written to a temporary file and atomically renamed into place. A process kill or crash mid-write can no longer truncate them — previously a half-written file would read back as an empty portfolio and then be overwritten, losing your settings.
+- **Crypto day change.** The previous close and the day's percent change now appear on crypto cards. The values were already fetched but never displayed; they use the small-value price format, so sub-dollar coins read correctly.
+
+### Changed
+- **Cash slice color.** The cash segment in the allocation doughnuts is now a deep emerald instead of grey, making it easy to pick out at a glance.
+
+### Security
+- **Login input hardening.** A non-string `password` in the login request now returns a clean 401 instead of a 500.
+- **Config field whitelist.** `POST /api/config` now keeps only known fields, so unexpected keys can no longer be persisted into the on-disk config.
+
 ## [1.2.0] — 2026-06-05
 
 ### Added
@@ -55,6 +68,7 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.2.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.1
 [1.2.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.0.0

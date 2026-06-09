@@ -4,7 +4,7 @@
 // a single password. No frameworks, no database — Node built-ins only.
 import http from 'node:http';
 import crypto from 'node:crypto';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,6 +44,14 @@ const limits = (p, g) => {
 };
 
 // ---- config store ----
+// write-to-temp then rename, so a crash mid-write can't truncate the real file
+const atomicWrite = async (file, data) => {
+  await mkdir(DATA_DIR, { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  await writeFile(tmp, data);
+  await rename(tmp, file);
+};
+
 const readConfig = async () => {
   try {
     const raw = JSON.parse(await readFile(CONFIG_FILE, 'utf8'));
@@ -52,8 +60,27 @@ const readConfig = async () => {
   } catch { return { ...DEFAULTS }; }
 };
 const writeConfig = async (cfg) => {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+  await atomicWrite(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+};
+
+// keep only known fields when accepting a config from the client
+const sanitizeConfig = (raw) => {
+  const o = raw && typeof raw === 'object' ? raw : {};
+  const pos = (p) => ({
+    ticker: String(p?.ticker ?? '').toUpperCase().slice(0, 12),
+    shares: +p?.shares || 0, price: +p?.price || 0, cost: +p?.cost || 0,
+    ceiling: +p?.ceiling || 0, floor: +p?.floor || 0, note: String(p?.note ?? '').slice(0, 200),
+  });
+  const arr = (v) => Array.isArray(v) ? v : [];
+  return {
+    ceiling: +o.ceiling || 0, floor: +o.floor || 0,
+    bank: String(o.bank ?? ''),
+    banks: arr(o.banks).map((b) => ({ ticker: String(b?.ticker ?? '').toUpperCase().slice(0, 12), target: +b?.target || 0 })).filter((b) => b.ticker),
+    cash: +o.cash || 0, minCash: +o.minCash || 0,
+    cryptoCeiling: +o.cryptoCeiling || 0, cryptoFloor: +o.cryptoFloor || 0,
+    positions: arr(o.positions).map(pos),
+    crypto: arr(o.crypto).map(pos),
+  };
 };
 
 // ---- quote proxy with short-lived cache; key never leaves the server ----
@@ -216,8 +243,7 @@ const snapshot = async (cfg, snap) => {
   for (const p of valued) w[p.sym] = +((p.value / total) * 100).toFixed(2);
   w.Cash = +(((+cfg.cash || 0) / total) * 100).toFixed(2);
   hist.push({ d: today, total: Math.round(total), w });
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(HISTORY_FILE, JSON.stringify(hist.slice(-HIST_DAYS)));
+  await atomicWrite(HISTORY_FILE, JSON.stringify(hist.slice(-HIST_DAYS)));
 };
 
 const tick = async () => {
@@ -228,7 +254,7 @@ const tick = async () => {
 };
 
 // ---- auth: constant-time password check + signed, HttpOnly session cookie ----
-const sha = (s) => crypto.createHash('sha256').update(s || '').digest();
+const sha = (s) => crypto.createHash('sha256').update(String(s ?? '')).digest();
 const checkPassword = (pw) => crypto.timingSafeEqual(sha(pw), sha(AUTH_PASSWORD));
 const makeSession = () => {
   const data = Buffer.from(JSON.stringify({ exp: Date.now() + SESSION_DAYS * 864e5 })).toString('base64url');
@@ -310,7 +336,7 @@ http.createServer(async (req, res) => {
     if (path === '/api/config' && req.method === 'GET') return send(res, 200, await readConfig());
     if (path === '/api/history' && req.method === 'GET') return send(res, 200, await readHistory());
     if (path === '/api/config' && req.method === 'POST') {
-      await writeConfig({ ...DEFAULTS, ...JSON.parse((await readBody(req)) || '{}') });
+      await writeConfig({ ...DEFAULTS, ...sanitizeConfig(JSON.parse((await readBody(req)) || '{}')) });
       return send(res, 200, { ok: true });
     }
     if (path.startsWith('/api/')) return send(res, 404, { error: 'not found' });

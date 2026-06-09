@@ -1,6 +1,6 @@
 {
   "name": "trimpoint",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "TrimPoint — self-hosted, informational position-ceiling tracker. Executes your rebalancing plan; not financial advice.",
   "type": "module",
   "private": true,

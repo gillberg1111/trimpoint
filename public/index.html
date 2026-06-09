@@ -298,7 +298,7 @@ const num = v => { const x = parseFloat(v); return isFinite(x)?x:0; };
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 const PALETTE=['#E3A94A','#6FC2C9','#E588A6','#7FC795','#E89D66','#B98BD6','#D9CF63','#6FA8E0','#E0846E','#9A8CE0'];
-const BANK_COLOR='#84A9DA', CASH_COLOR='#626975';
+const BANK_COLOR='#84A9DA', CASH_COLOR='#1F9E5A';
 
 let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30 };
 let nextId = 1, saveTimer = null, history = [], booted = false;
@@ -471,9 +471,9 @@ function render(){
     : `Cash ${stock.cashPct.toFixed(1)}% of account`;
   $("cashNote").style.color = stock.cashLow ? "var(--gold)" : "var(--muted2)";
 
-  state.positions.forEach(p=>{ const el=$("pc-"+p.id); if(!el) return; const pc=num(p.prevClose), cur=num(p.price);
+  [...state.positions, ...state.crypto].forEach(p=>{ const el=$("pc-"+p.id); if(!el) return; const pc=num(p.prevClose), cur=num(p.price);
     if(pc>0){ const ch=cur>0?(cur-pc)/pc*100:null;
-      el.innerHTML=`prev close ${money(pc)}`+(ch!=null&&isFinite(ch)?` · <span style="color:${ch>=0?"var(--green)":"var(--danger)"}">${ch>=0?"+":"−"}${Math.abs(ch).toFixed(1)}% today</span>`:""); }
+      el.innerHTML=`prev close ${priceFmt(pc)}`+(ch!=null&&isFinite(ch)?` · <span style="color:${ch>=0?"var(--green)":"var(--danger)"}">${ch>=0?"+":"−"}${Math.abs(ch).toFixed(1)}% today</span>`:""); }
     else el.textContent=""; });
 }
 
@@ -573,7 +573,7 @@ async function refreshCrypto(){
     if(r.status===401){ location.href='/login'; return; }
     if(!r.ok) throw new Error('crypto');
     const prices=await r.json(); let updated=0, missed=0;
-    state.crypto.forEach(p=>{ const t=(p.ticker||"").trim().toUpperCase(); if(t in prices){ const q=prices[t]; if(q&&q.c!=null){ p.price=Number(q.c); updated++; } else missed++; } });
+    state.crypto.forEach(p=>{ const t=(p.ticker||"").trim().toUpperCase(); if(t in prices){ const q=prices[t]; if(q&&q.c!=null){ p.price=Number(q.c); p.prevClose=(q.pc!=null)?Number(q.pc):null; updated++; } else missed++; } });
     buildRows(); saveConfig();
     const now=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
     status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — those coins may not be listed.";
