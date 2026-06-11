@@ -4,6 +4,14 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-06-11
+
+### Added
+- **Version in the footer.** The bottom of the page now shows the running version (e.g. `TrimPoint v1.3.1`). It's read from `package.json` on the server and surfaced via `/api/health`, so it always matches the deployed build — no second place to keep in sync.
+
+### Fixed
+- **Bank funds can't linger in a group.** Nominating a position as a bank fund now also removes it from any group it belonged to. Group math already excluded bank funds; this clears the leftover chip so the two never visually overlap — matching the cleanup that already happens when a position is deleted.
+
 ## [1.3.0] — 2026-06-11
 
 This release makes TrimPoint model "core + capped tilts" correctly — a multi-fund core held as the bank, with smaller positions kept under a shared cap — without nagging you to buy into deliberately-small holdings.
@@ -84,6 +92,7 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.3.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.0
 [1.2.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.1
 [1.2.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.0

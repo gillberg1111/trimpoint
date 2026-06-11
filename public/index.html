@@ -303,6 +303,7 @@
     Informational only. It tracks your positions against thresholds <em>you</em> define; it makes no recommendations and is not financial advice.<br>
     Stock data by <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">Finnhub</a> · crypto data by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">CoinGecko</a>.
     <span id="logoutWrap" style="display:none;"><br><a href="#" id="logoutLink" style="color:var(--gold-dim);text-decoration:none;">Log out</a></span>
+    <span id="verNum" style="display:block;margin-top:8px;color:var(--muted2);font-size:11.5px;letter-spacing:.04em;"></span>
   </footer>
   <div class="support"><a href="https://buymeacoffee.com/gillberg1111" target="_blank" rel="noopener noreferrer" class="bmc" aria-label="Buy me a coffee"><span class="cup" aria-hidden="true">☕</span> Buy me a coffee</a></div>
 </div>
@@ -681,7 +682,7 @@ document.addEventListener("input", e=>{
   else if(t.id==="minCash"){ state.minCash=t.value; render(); }
 });
 document.addEventListener("change", e=>{
-  if(e.target.id==="bankAdd" && e.target.value){ const tk=e.target.value.toUpperCase(); if(!bankSet().has(tk)){ state.banks.push({ ticker:tk, target:"" }); render(); } e.target.value=""; }
+  if(e.target.id==="bankAdd" && e.target.value){ const tk=e.target.value.toUpperCase(); if(!bankSet().has(tk)){ state.banks.push({ ticker:tk, target:"" }); state.groups.forEach(g=>{ g.members=(g.members||[]).filter(m=>(m||"").trim().toUpperCase()!==tk); }); render(); } e.target.value=""; }
   if(e.target.dataset && e.target.dataset.grpmemadd!==undefined && e.target.value){ const i=+e.target.dataset.grpmemadd, tk=e.target.value.toUpperCase(); if(state.groups[i] && !(state.groups[i].members||[]).includes(tk)){ (state.groups[i].members=state.groups[i].members||[]).push(tk); render(); } e.target.value=""; }
   if(e.target.dataset && e.target.dataset.f==="ticker") buildBankAdd();
   saveConfig();
@@ -714,7 +715,7 @@ $("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypt
 $("refreshBtn").addEventListener("click", refreshPrices);
 $("cryptoRefreshBtn").addEventListener("click", refreshCrypto);
 $("groupAdd").addEventListener("click", ()=>{ state.groups.push({ name:"", members:[], ceiling:"" }); render(); saveConfig(); });
-fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; }).catch(()=>{});
+fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; if(d&&d.version) $("verNum").textContent="TrimPoint v"+d.version; }).catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 
 (async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cCeil").value=state.cryptoCeiling; $("cFloor").value=state.cryptoFloor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); booted=true; })();

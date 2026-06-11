@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PUBLIC = join(ROOT, 'public');
+let VERSION = '';
+try { VERSION = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf8')).version || ''; } catch {}
 
 const {
   FINNHUB_KEY = '',
@@ -340,7 +342,7 @@ http.createServer(async (req, res) => {
       res.writeHead(302, { Location: '/login' }); return res.end();
     }
 
-    if (path === '/api/health') return send(res, 200, { ok: true, auth: AUTH_ON });
+    if (path === '/api/health') return send(res, 200, { ok: true, auth: AUTH_ON, version: VERSION });
 
     if (path === '/api/login' && req.method === 'POST') {
       const { password } = JSON.parse((await readBody(req)) || '{}');
