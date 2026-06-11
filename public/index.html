@@ -98,6 +98,21 @@
   .bank-item.over-off{border-left-color:var(--danger);} .bank-item.over-off .bk-dot{background:var(--danger);box-shadow:0 0 9px var(--danger);} .bank-item.over-off .bk-actual,.bank-item.over-off .bk-fix{color:var(--danger);}
   .bank-item.under-warn{border-left-color:#6FC2C9;} .bank-item.under-warn .bk-dot{background:#6FC2C9;box-shadow:0 0 8px #6FC2C9;} .bank-item.under-warn .bk-actual,.bank-item.under-warn .bk-fix{color:#6FC2C9;}
   .bank-item.under-off{border-left-color:#7FA8E6;} .bank-item.under-off .bk-dot{background:#7FA8E6;box-shadow:0 0 9px #7FA8E6;} .bank-item.under-off .bk-actual,.bank-item.under-off .bk-fix{color:#7FA8E6;}
+  #groupRows{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .group-item{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold-dim);border-radius:11px;padding:11px 13px;}
+  .group-item.over{border-left-color:var(--gold);}
+  .grp-top{display:flex;align-items:center;gap:8px;}
+  .grp-top input.grp-name{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--ink);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:14px;padding:3px 2px;outline:none;}
+  .grp-top input.grp-name:focus{border-bottom-color:var(--gold-dim);}
+  .grp-cap{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);flex:0 0 auto;}
+  .grp-cap input{width:52px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:7px;padding:5px 7px;text-align:right;outline:none;}
+  .grp-rm{background:transparent;border:0;color:var(--muted2);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;flex:0 0 auto;} .grp-rm:hover{color:var(--danger);}
+  .grp-members{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .grp-mem{display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink);}
+  .grp-mem button{background:transparent;border:0;color:var(--muted2);cursor:pointer;font-size:14px;line-height:1;padding:0;} .grp-mem button:hover{color:var(--danger);}
+  .grp-memadd{background:transparent;border:1px dashed var(--line);color:var(--muted);font-family:'Hanken Grotesk',sans-serif;font-size:12px;border-radius:8px;padding:5px 8px;outline:none;cursor:pointer;}
+  .grp-memadd:hover{border-color:var(--gold-dim);color:var(--gold);}
+  .grp-status{font-size:12px;line-height:1.4;color:var(--muted);} .group-item.over .grp-status{color:var(--gold);}
   .hint{font-size:12.5px;color:var(--muted2);line-height:1.5;margin-top:9px;}
 
   .pos{background:linear-gradient(180deg,var(--card),#191d25);border:1px solid var(--line-soft);border-left:3px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:11px;transition:transform .16s,border-color .2s,box-shadow .2s;}
@@ -229,12 +244,17 @@
     <div class="field"><div class="k">Ceiling</div><div class="v"><input id="ceil" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
     <div class="field"><div class="k">Floor / trim-to</div><div class="v"><input id="floor" type="number" inputmode="decimal"><span class="pct">%</span></div></div>
   </div>
-  <div class="hint">Ceiling = the weight that triggers a trim; floor = where the trim lands. Each position can override either — and a per-position floor also flags the holding "underweight" if it dips below. Changes sync across your devices.</div>
+  <div class="hint">Ceiling = the weight that triggers a trim; floor = where the trim lands. Each position can override either, and optionally set an underweight alert to flag when it dips below a level you choose. Changes sync across your devices.</div>
 
   <div class="panel-label">Bank — where trims land, exempt from ceiling</div>
   <div id="bankRows"></div>
   <select id="bankAdd" class="bank-add"><option value="">+ Add a fund to your bank</option></select>
   <div class="hint" id="bankHint">Pick the holding your trims flow into. Add a second fund to track a target split — e.g. a three-fund 80 / 10 / 10.</div>
+
+  <div class="panel-label">Groups — a shared ceiling across several positions</div>
+  <div id="groupRows"></div>
+  <button class="bank-add" id="groupAdd" type="button">+ Add a group</button>
+  <div class="hint">Cap a basket of holdings together — e.g. a "Tech tilt" of AAPL / MSFT / NVDA at a combined 15%. Each position still keeps its own ceiling; the group adds a limit on their total. Bank funds can't be grouped.</div>
 
   <hr class="rule">
   <div class="panel-label">Positions <span class="ph-hint">tap a holding to expand</span></div>
@@ -300,25 +320,27 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 const PALETTE=['#E3A94A','#6FC2C9','#E588A6','#7FC795','#E89D66','#B98BD6','#D9CF63','#6FA8E0','#E0846E','#9A8CE0'];
 const BANK_COLOR='#84A9DA', CASH_COLOR='#1F9E5A';
 
-let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30 };
+let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[] };
 let nextId = 1, saveTimer = null, history = [], booted = false;
 const openIds = new Set(); let justOpened = null;
 
 async function loadConfig(){
-  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, ...(await r.json()) }; }catch(e){}
-  const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", note:p.note||"" });
+  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[], ...(await r.json()) }; }catch(e){}
+  const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", underweightAlert:p.underweightAlert||"", note:p.note||"" });
   state.positions = (state.positions||[]).map(mapPos);
   state.crypto = (state.crypto||[]).map(mapPos);
   state.banks = Array.isArray(state.banks) && state.banks.length ? state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:b.target||"" }))
     : (state.bank ? [{ ticker:String(state.bank).toUpperCase(), target:"" }] : []);
+  state.groups = (Array.isArray(state.groups)?state.groups:[]).map(g=>({ name:g.name||"", members:(Array.isArray(g.members)?g.members:[]).map(t=>(t||"").toUpperCase()), ceiling:g.ceiling||"" }));
 }
 function saveConfig(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, note:(p.note||"").trim() });
+    const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, underweightAlert:num(p.underweightAlert)||0, note:(p.note||"").trim() });
     const banks = state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:num(b.target)||0 })).filter(b=>b.ticker);
+    const groups = state.groups.map(g=>({ name:(g.name||"").trim().slice(0,40), members:(g.members||[]).map(t=>(t||"").toUpperCase()).filter(Boolean), ceiling:num(g.ceiling)||0 })).filter(g=>g.members.length);
     const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:banks[0]?banks[0].ticker:"", banks, cash:num(state.cash), minCash:num(state.minCash), cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
-      positions: state.positions.map(mapPos), crypto: state.crypto.map(mapPos) };
+      positions: state.positions.map(mapPos), crypto: state.crypto.map(mapPos), groups };
     fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
   }, 400);
 }
@@ -354,9 +376,9 @@ function computeList(list, cashVal, gC, gF, bankSet){
     let kind="ok", sellShares=0, sellVal=0, landWeight=weight;
     if(isBank) kind="bank";
     else if(weight>effCeil && num(p.price)>0){ kind="trim"; overCount++; sellShares=Math.max(1, Math.round((p.mv-(effFloor/100)*total)/num(p.price))); sellVal=sellShares*num(p.price); landWeight= total>0 ? ((p.mv-sellVal)/total)*100 : 0; }
-    else if(num(p.floor)>0 && weight>0 && weight<num(p.floor)){ kind="under"; }
+    else if(num(p.underweightAlert)>0 && weight>0 && weight<num(p.underweightAlert)){ kind="under"; }
     const house = (!isBank && mult>=2 && num(p.price)>0) ? { principal:num(p.shares)*num(p.cost) } : null;
-    return { ...p, weight, isBank, mult, effCeil, effFloor, kind, sellShares, sellVal, landWeight, house };
+    return { ...p, weight, isBank, mult, effCeil, effFloor, uwAlert:num(p.underweightAlert), kind, sellShares, sellVal, landWeight, house };
   });
   return { rows:out, total, overCount };
 }
@@ -368,6 +390,31 @@ function compute(){
 function computeCrypto(){
   return computeList(state.crypto, 0, num(state.cryptoCeiling), num(state.cryptoFloor), new Set());
 }
+function computeGroups(stock){
+  const bset = bankSet();
+  return state.groups.map(g=>{
+    const members = (g.members||[]).map(t=>(t||"").trim().toUpperCase()).filter(Boolean);
+    const rows = stock.rows.filter(r=>members.includes(r.ticker.trim().toUpperCase()) && !bset.has(r.ticker.trim().toUpperCase()));
+    const weight = rows.reduce((s,r)=>s+r.weight,0);
+    const ceiling = num(g.ceiling);
+    const over = ceiling>0 && weight>ceiling+1e-4;
+    let pick=null, trimVal=0, trimShares=0;
+    if(over && rows.length){
+      pick = rows.reduce((a,b)=> b.weight>a.weight ? b : a);
+      const breachVal = (weight-ceiling)/100*stock.total;
+      const toTrimToVal = pick.mv - (pick.effFloor/100)*stock.total;
+      trimVal = toTrimToVal>0 ? Math.min(breachVal, toTrimToVal) : breachVal;
+      trimShares = num(pick.price)>0 ? Math.max(1, Math.round(trimVal/num(pick.price))) : 0;
+    }
+    return { name:(g.name||"").trim()||"Group", members, weight, ceiling, over, pick, trimVal, trimShares };
+  });
+}
+function groupStatusText(gc, dest){
+  if(!(gc.ceiling>0)) return `${gc.weight.toFixed(1)}% combined — set a cap %`;
+  if(!gc.over) return `${gc.weight.toFixed(1)}% of your ${gc.ceiling}% cap`;
+  const trim = gc.pick ? ` · trim ~${money0(gc.trimVal)}${gc.trimShares?` (≈ ${gc.trimShares} sh)`:''} from ${gc.pick.ticker.trim().toUpperCase()}${dest?` → ${dest}`:''}` : '';
+  return `▲ ${gc.weight.toFixed(1)}% — over your ${gc.ceiling}% cap${trim}`;
+}
 function bankSet(){ return new Set(state.banks.map(b=>(b.ticker||"").trim().toUpperCase()).filter(Boolean)); }
 function bankTier(actual, target){ if(!(target>0)) return ""; const band=Math.min(5, target*0.25), dev=actual-target, a=Math.abs(dev); if(a<=band/2) return "ok"; const sev=a<=band?"warn":"off"; return (dev>0?"over-":"under-")+sev; }
 function computeBank(){
@@ -378,6 +425,15 @@ function computeBank(){
 }
 function bankActual(it){ const arrow = it.tier.startsWith("over")?"▲ ":it.tier.startsWith("under")?"▼ ":""; return `<span class="bk-dot"></span>${arrow}${it.within.toFixed(1)}%`; }
 function bankFix(it){ if(it.tier==="ok" || !(it.target>0)) return ""; const add=it.delta>0, amt=Math.abs(it.delta), sh=it.price>0?Math.round(amt/it.price):0; return `${add?"Add":"Trim"} ~${money0(amt)}${sh?` (≈ ${sh} sh)`:""} to reach ${it.target}%`; }
+function bankRouteLabel(){
+  const { items } = computeBank();
+  if(!items.length) return "";
+  if(items.length===1) return (items[0].ticker||"").toUpperCase();
+  const withTargets = items.filter(i=>i.target>0);
+  if(!withTargets.length) return "your bank funds";
+  const pick = withTargets.reduce((a,b)=> (b.target-b.within) > (a.target-a.within) ? b : a);
+  return (pick.ticker||"").toUpperCase();
+}
 
 function renderDonut(svgId, segs, total){
   const svg=$(svgId); const cx=90,cy=90,r=64,sw=20,C=2*Math.PI*r;
@@ -422,13 +478,25 @@ function paintRow(r, total, bankName, unitWord){
   const note=(r.note||"").trim(); let html="";
   if(r.kind==="trim") html=`<div class="action"><span class="lead">▲ Over your ${r.effCeil}% ceiling</span> — trim <b>${r.sellShares}</b> ${r.sellShares===1?unitWord:unitWord+"s"} (≈ <b>${money0(r.sellVal)}</b>)${bankName?` → ${bankName}`:""}<br><span class="land">lands at ~${r.landWeight.toFixed(1)}%</span>${note?`<span class="n">“${esc(note)}”</span>`:""}</div>`;
   else if(r.kind==="bank") html=`<div class="status bank"><span class="dot"></span>Bank — trims land here</div>`;
-  else if(r.kind==="under") html=`<div class="status under"><span class="dot"></span>Underweight <span class="near">· ${(r.effFloor-r.weight).toFixed(1)} pts below your ${r.effFloor}% floor</span></div>`;
+  else if(r.kind==="under") html=`<div class="status under"><span class="dot"></span>Underweight <span class="near">· ${(r.uwAlert-r.weight).toFixed(1)} pts under your ${r.uwAlert}% alert</span></div>`;
   else html=`<div class="status ok"><span class="dot"></span>Within bounds <span class="near">· ${Math.max(0,r.effCeil-r.weight).toFixed(1)} pts to your ${r.effCeil}% ceiling</span></div>`;
   if(!r.isBank){ const dr=driftFor(r.ticker.trim().toUpperCase(), r.weight); if(dr){ html+=`<div class="drift">${sparkline(dr.vals)}<span>${dr.pts>=0?"▲":"▼"} ${Math.abs(dr.pts).toFixed(1)} pts · ${dr.days}d drift</span></div>`; } }
   if(r.house) html+=`<div class="house"><span>●</span><div>Past 2× — your <b>${money0(r.house.principal)}</b> principal is house money. A cost-basis fact, unaffected by the ceiling.</div></div>`;
   $("out-"+r.id).innerHTML=html;
 }
 
+function renderBanner(){
+  const stock=compute(), crypto=computeCrypto(), groups=computeGroups(stock);
+  const over=stock.overCount+crypto.overCount, groupsOver=groups.filter(g=>g.over).length;
+  const b=$("banner");
+  if(!state.positions.length && !state.crypto.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; return; }
+  const parts=[];
+  if(over) parts.push(`${over} position${over>1?"s":""} over your ceiling`);
+  if(groupsOver) parts.push(`${groupsOver} group${groupsOver>1?"s":""} over cap`);
+  if(stock.cashLow) parts.push(`cash below your ${stock.minCash}% floor`);
+  if(parts.length){ b.className="banner act"; b.innerHTML=`<span class="mark">▲</span><div class="btxt">${parts.join(" · ")} — check your plan.</div>`; }
+  else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; }
+}
 function render(){
   const stock = compute();
   const crypto = computeCrypto();
@@ -450,21 +518,13 @@ function render(){
     $("cryptoCap").textContent = `${state.crypto.length} coin${state.crypto.length>1?"s":""}`;
   }
 
-  const over = stock.overCount + crypto.overCount;
-  const b = $("banner");
-  if(!state.positions.length && !state.crypto.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; }
-  else {
-    const parts=[];
-    if(over) parts.push(`${over} position${over>1?"s":""} over your ceiling`);
-    if(stock.cashLow) parts.push(`cash below your ${stock.minCash}% floor`);
-    if(parts.length){ b.className="banner act"; b.innerHTML=`<span class="mark">▲</span><div class="btxt">${parts.join(" · ")} — check your plan.</div>`; }
-    else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; }
-  }
+  renderBanner();
 
-  const bankLabel = state.banks.length===1 ? (state.banks[0].ticker||"").toUpperCase() : state.banks.length>1 ? "your bank funds" : "";
+  const bankLabel = bankRouteLabel();
   stock.rows.forEach(r=>paintRow(r, stock.total, bankLabel, "share"));
   crypto.rows.forEach(r=>paintRow(r, crypto.total, "", "unit"));
   renderBank();
+  renderGroups();
 
   $("cashNote").textContent = stock.total<=0 ? "" : stock.minCash>0
     ? `Cash ${stock.cashPct.toFixed(1)}% · ${stock.cashLow?`below your ${stock.minCash}% floor`:`above your ${stock.minCash}% floor`}`
@@ -491,7 +551,8 @@ function buildCardsInto(hostId, list, gC, gF, amtLabel){
       <button class="adv-toggle" data-adv="${p.id}">＋ rules &amp; note</button>
       <div class="adv" id="adv-${p.id}">
         <div class="inputs" style="grid-template-columns:1fr 1fr;"><div class="g"><label>Ceiling % override</label><input data-id="${p.id}" data-f="ceiling" type="number" inputmode="decimal" value="${p.ceiling||''}" placeholder="${gC}"></div>
-        <div class="g"><label>Floor % override</label><input data-id="${p.id}" data-f="floor" type="number" inputmode="decimal" value="${p.floor||''}" placeholder="${gF}"></div></div>
+        <div class="g"><label>Trim-to % override</label><input data-id="${p.id}" data-f="floor" type="number" inputmode="decimal" value="${p.floor||''}" placeholder="${gF}"></div></div>
+        <div class="g" style="margin-top:8px;"><label>Underweight alert % — optional</label><input data-id="${p.id}" data-f="underweightAlert" type="number" inputmode="decimal" value="${p.underweightAlert||''}" placeholder="off"></div>
         <div class="g" style="margin-top:8px;"><label>Note — why this ceiling</label><input data-id="${p.id}" data-f="note" type="text" value="${esc(p.note)}" placeholder="e.g. lock gains for house fund"></div>
       </div>
       <div id="out-${p.id}"></div>`;
@@ -543,6 +604,30 @@ function updateBankColors(){
   const hint=$("bankHint"); if(hint && items.length>1){ const sum=items.reduce((s,i)=>s+num(i.target),0), ok=Math.abs(sum-100)<0.5;
     hint.innerHTML = `Each fund shows its share of the bank, with a nudge on how to rebalance when it drifts (5/25 rule). Targets total <b style="color:${ok?'var(--green)':'var(--gold)'}">${sum.toFixed(0)}%</b>${ok?'':' — aim for 100%'}.`; }
 }
+function renderGroups(){
+  const host=$("groupRows"); if(!host) return;
+  const stock=compute(), gs=computeGroups(stock), dest=bankRouteLabel(), bset=bankSet();
+  host.innerHTML = state.groups.map((g,idx)=>{
+    const gc=gs[idx];
+    const memChips=(g.members||[]).map((t,mi)=>`<span class="grp-mem">${esc((t||"").toUpperCase())}<button data-grpmemrm="${idx}:${mi}" title="remove">×</button></span>`).join('');
+    const opts=state.positions.filter(p=>{ const tk=p.ticker.trim().toUpperCase(); return tk && tk!=="NEW" && !(g.members||[]).map(x=>(x||"").toUpperCase()).includes(tk) && !bset.has(tk); });
+    const addSel=opts.length?`<select class="grp-memadd" data-grpmemadd="${idx}"><option value="">+ add holding</option>${opts.map(p=>{const t=esc(p.ticker.trim().toUpperCase());return `<option value="${t}">${t}</option>`;}).join('')}</select>`:'';
+    return `<div class="group-item ${gc.over?'over':''}">
+      <div class="grp-top"><input class="grp-name" data-grpname="${idx}" value="${esc(g.name||'')}" placeholder="Group name" maxlength="40"><label class="grp-cap">cap <input data-grpcap="${idx}" type="number" inputmode="decimal" value="${g.ceiling||''}">%</label><button class="grp-rm" data-grprm="${idx}" title="remove group">×</button></div>
+      <div class="grp-members">${memChips||'<span style="font-size:12px;color:var(--muted2)">no holdings yet</span>'} ${addSel}</div>
+      <div class="grp-status">${groupStatusText(gc, dest)}</div>
+    </div>`;
+  }).join('');
+}
+function updateGroups(){
+  const stock=compute(), gs=computeGroups(stock), dest=bankRouteLabel();
+  document.querySelectorAll('#groupRows .group-item').forEach((el,idx)=>{
+    const gc=gs[idx]; if(!gc) return;
+    el.classList.toggle('over', gc.over);
+    const st=el.querySelector('.grp-status'); if(st) st.innerHTML=groupStatusText(gc, dest);
+  });
+  renderBanner();
+}
 
 async function refreshPrices(){
   const btn=$("refreshBtn"), status=$("refreshStatus");
@@ -590,11 +675,14 @@ document.addEventListener("input", e=>{
   else if(t.id==="floor"){ state.floor=t.value; render(); }
   else if(t.id==="cCeil"){ state.cryptoCeiling=t.value; render(); }
   else if(t.id==="cFloor"){ state.cryptoFloor=t.value; render(); }
+  else if(t.dataset && t.dataset.grpname!==undefined){ const i=+t.dataset.grpname; if(state.groups[i]) state.groups[i].name=t.value; }
+  else if(t.dataset && t.dataset.grpcap!==undefined){ const i=+t.dataset.grpcap; if(state.groups[i]) state.groups[i].ceiling=t.value; updateGroups(); }
   else if(t.id==="cash"){ state.cash=t.value; render(); }
   else if(t.id==="minCash"){ state.minCash=t.value; render(); }
 });
 document.addEventListener("change", e=>{
   if(e.target.id==="bankAdd" && e.target.value){ const tk=e.target.value.toUpperCase(); if(!bankSet().has(tk)){ state.banks.push({ ticker:tk, target:"" }); render(); } e.target.value=""; }
+  if(e.target.dataset && e.target.dataset.grpmemadd!==undefined && e.target.value){ const i=+e.target.dataset.grpmemadd, tk=e.target.value.toUpperCase(); if(state.groups[i] && !(state.groups[i].members||[]).includes(tk)){ (state.groups[i].members=state.groups[i].members||[]).push(tk); render(); } e.target.value=""; }
   if(e.target.dataset && e.target.dataset.f==="ticker") buildBankAdd();
   saveConfig();
 });
@@ -604,9 +692,16 @@ document.addEventListener("click", e=>{
   const rm=t.closest&&t.closest("[data-rm]");
   const op=t.closest&&t.closest("[data-open]");
   const bankrm=t.closest&&t.closest("[data-bankrm]");
+  const grprm=t.closest&&t.closest("[data-grprm]");
+  const grpmemrm=t.closest&&t.closest("[data-grpmemrm]");
   if(adv){ const id=adv.dataset.adv; $("adv-"+id).classList.toggle("open"); adv.textContent = $("adv-"+id).classList.contains("open") ? "− rules & note" : "＋ rules & note"; }
   else if(bankrm){ state.banks.splice(+bankrm.dataset.bankrm,1); render(); saveConfig(); }
-  else if(rm){ const id=rm.dataset.rm; state.positions=state.positions.filter(p=>p.id!=id); state.crypto=state.crypto.filter(p=>p.id!=id); openIds.delete(+id); buildRows(); saveConfig(); }
+  else if(grprm){ state.groups.splice(+grprm.dataset.grprm,1); render(); saveConfig(); }
+  else if(grpmemrm){ const [gi,mi]=grpmemrm.dataset.grpmemrm.split(":").map(Number); if(state.groups[gi]) state.groups[gi].members.splice(mi,1); render(); saveConfig(); }
+  else if(rm){ const id=rm.dataset.rm; const gone=(state.positions.find(p=>p.id==id)||{}).ticker; const tk=(gone||"").trim().toUpperCase();
+    state.positions=state.positions.filter(p=>p.id!=id); state.crypto=state.crypto.filter(p=>p.id!=id); openIds.delete(+id);
+    if(tk){ state.banks=state.banks.filter(b=>(b.ticker||"").trim().toUpperCase()!==tk); state.groups.forEach(g=>{ g.members=(g.members||[]).filter(m=>(m||"").trim().toUpperCase()!==tk); }); }
+    buildRows(); saveConfig(); }
   else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } buildRows(); }
 });
 const legendEl=$("legend");
@@ -614,10 +709,11 @@ legendEl.addEventListener("mouseover", e=>{ const leg=e.target.closest(".leg"); 
   document.querySelectorAll("#donut .seg").forEach(g=>g.style.opacity = g.dataset.seg===s?"1":"0.18");
   document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity = l.dataset.seg===s?"1":"0.4"); });
 legendEl.addEventListener("mouseout", e=>{ if(e.target.closest(".leg")){ document.querySelectorAll("#donut .seg").forEach(g=>g.style.opacity=""); document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity=""); } });
-$("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
-$("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
+$("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
+$("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
 $("refreshBtn").addEventListener("click", refreshPrices);
 $("cryptoRefreshBtn").addEventListener("click", refreshCrypto);
+$("groupAdd").addEventListener("click", ()=>{ state.groups.push({ name:"", members:[], ceiling:"" }); render(); saveConfig(); });
 fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; }).catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 

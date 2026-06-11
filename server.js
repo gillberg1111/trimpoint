@@ -32,7 +32,7 @@ const CONFIG_FILE = join(DATA_DIR, 'config.json');
 const HISTORY_FILE = join(DATA_DIR, 'history.json');
 const HISTORY_ON = HISTORY !== 'off';
 const HIST_DAYS = 730;
-const DEFAULTS = { ceiling: 25, floor: 20, bank: '', banks: [], cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30 };
+const DEFAULTS = { ceiling: 25, floor: 20, bank: '', banks: [], cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30, groups: [] };
 
 // ---- effective per-position limits (overrides > scaled-from-global > global) ----
 const limits = (p, g) => {
@@ -69,7 +69,8 @@ const sanitizeConfig = (raw) => {
   const pos = (p) => ({
     ticker: String(p?.ticker ?? '').toUpperCase().slice(0, 12),
     shares: +p?.shares || 0, price: +p?.price || 0, cost: +p?.cost || 0,
-    ceiling: +p?.ceiling || 0, floor: +p?.floor || 0, note: String(p?.note ?? '').slice(0, 200),
+    ceiling: +p?.ceiling || 0, floor: +p?.floor || 0, underweightAlert: +p?.underweightAlert || 0,
+    note: String(p?.note ?? '').slice(0, 200),
   });
   const arr = (v) => Array.isArray(v) ? v : [];
   return {
@@ -80,6 +81,11 @@ const sanitizeConfig = (raw) => {
     cryptoCeiling: +o.cryptoCeiling || 0, cryptoFloor: +o.cryptoFloor || 0,
     positions: arr(o.positions).map(pos),
     crypto: arr(o.crypto).map(pos),
+    groups: arr(o.groups).map((g) => ({
+      name: String(g?.name ?? '').slice(0, 40),
+      members: arr(g?.members).map((t) => String(t ?? '').toUpperCase().slice(0, 12)).filter(Boolean),
+      ceiling: +g?.ceiling || 0,
+    })).filter((g) => g.members.length),
   };
 };
 
@@ -208,7 +214,20 @@ const checkThresholds = async (cfg, snap) => {
   if (NOTIFY_KIND === 'off' || !NOTIFY_URL || !snap) return;
   const { valued, total } = snap;
   const banks = Array.isArray(cfg.banks) && cfg.banks.length ? cfg.banks.map(b => String(b.ticker || '').toUpperCase()).filter(Boolean) : (cfg.bank ? [String(cfg.bank).toUpperCase()] : []);
-  const dest = banks.length === 1 ? banks[0] : banks.length > 1 ? 'your bank funds' : '';
+  const bankList = (Array.isArray(cfg.banks) ? cfg.banks : []).map((b) => ({ sym: String(b.ticker || '').toUpperCase(), target: +b.target || 0 })).filter((b) => b.sym);
+  let dest = '';
+  if (bankList.length === 1) dest = bankList[0].sym;
+  else if (bankList.length > 1) {
+    const withT = bankList.filter((b) => b.target > 0);
+    const bankTotal = bankList.reduce((s, b) => { const v = valued.find((p) => p.sym === b.sym); return s + (v ? v.value : 0); }, 0);
+    if (withT.length && bankTotal > 0) {
+      const pick = withT.reduce((a, b) => {
+        const av = valued.find((p) => p.sym === a.sym), bv = valued.find((p) => p.sym === b.sym);
+        return (b.target - (bv ? bv.value / bankTotal * 100 : 0)) > (a.target - (av ? av.value / bankTotal * 100 : 0)) ? b : a;
+      });
+      dest = pick.sym;
+    } else dest = 'your bank funds';
+  } else if (cfg.bank) dest = String(cfg.bank).toUpperCase();
   for (const p of valued) {
     if (banks.includes(p.sym)) continue;
     const pct = (p.value / total) * 100;
@@ -219,6 +238,20 @@ const checkThresholds = async (cfg, snap) => {
       if (p.note) body += `\nNote: ${p.note}`;
       await notify(`${p.sym} crossed your ${p.ceiling}% ceiling`, body);
     } else if (pct <= p.ceiling) flagged.delete(p.sym);
+  }
+  for (const g of (Array.isArray(cfg.groups) ? cfg.groups : [])) {
+    const members = (Array.isArray(g.members) ? g.members : []).map((t) => String(t || '').toUpperCase()).filter(Boolean);
+    if (!members.length || !(+g.ceiling > 0)) continue;
+    const rows = valued.filter((p) => members.includes(p.sym) && !banks.includes(p.sym));
+    if (!rows.length) continue;
+    const gpct = rows.reduce((s, p) => s + p.value, 0) / total * 100;
+    const key = 'grp:' + (g.name || members.join('+'));
+    if (gpct > +g.ceiling && !flagged.has(key)) {
+      flagged.add(key);
+      const top = rows.reduce((a, b) => (b.value > a.value ? b : a));
+      let body = `${g.name || 'Group'} is ${gpct.toFixed(1)}% of the account, over your ${g.ceiling}% cap. Your plan: trim ${top.sym}${dest ? ` into ${dest}` : ''}.`;
+      await notify(`${g.name || 'Group'} crossed its ${g.ceiling}% cap`, body);
+    } else if (gpct <= +g.ceiling) flagged.delete(key);
   }
   if (+cfg.minCash > 0) {
     const cashPct = ((+cfg.cash || 0) / total) * 100;

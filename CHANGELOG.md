@@ -4,6 +4,22 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-06-11
+
+This release makes TrimPoint model "core + capped tilts" correctly — a multi-fund core held as the bank, with smaller positions kept under a shared cap — without nagging you to buy into deliberately-small holdings.
+
+### Added
+- **Position groups.** Cap a basket of holdings under one combined ceiling — e.g. a "Tech tilt" of AAPL / MSFT / NVDA limited to 15% together. Each position still keeps its own ceiling; the group adds a limit on their total. When the group is over, its panel turns gold and names the move — which member to trim, roughly how much, and where it lands — and the status banner counts it alongside position breaches. Notifications fire on a group crossing its cap, too. Bank funds can't be grouped (they're ceiling-exempt by design).
+- **Underweight alerts.** A new optional, per-position threshold that flags a holding as underweight when it dips below a level you choose. It's **off by default**, and it's the *only* thing that raises the underweight flag now (see below).
+
+### Changed
+- **Multi-fund bank trim routing.** With more than one fund in the bank, trims now name the specific fund furthest *below* its target weight — so following the suggestion nudges your core back toward its split (e.g. a 75 / 25 VTI / VXUS core routes trims to whichever side is light). Both the on-card suggestion and the notification name the same fund. A single-fund bank, and a multi-fund bank with no targets set, behave exactly as before.
+- **Trim-to and underweight are now separate.** A per-position floor used to do double duty — it was both the trim landing *and* a silent underweight trigger, which meant a deliberately-small capped position read as "underweight" forever. The floor (relabeled **"Trim-to % override"**) now controls only where a trim lands; underweight flagging moved entirely to the new optional alert above.
+
+### Notes
+- Existing configurations load unchanged. Per-position floors keep their trim-to meaning, and underweight alerts start **off** — so nothing that was quiet before suddenly starts flagging. Set an underweight alert on any holding you do want watched.
+- Removing a position now also clears it from the bank and from any group it belonged to, so no stale references linger.
+
 ## [1.2.1] — 2026-06-09
 
 ### Fixed
@@ -68,6 +84,7 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.3.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.0
 [1.2.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.1
 [1.2.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.1.0

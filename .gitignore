@@ -4,3 +4,6 @@ data/
 *.log
 *.tmp
 .DS_Store
+
+# local-only architecture notes
+docs/ARCHITECTURE.md
