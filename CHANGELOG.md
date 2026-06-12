@@ -4,6 +4,23 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] — 2026-06-12
+
+A polish pass — no new concepts, just the existing surfaces feeling tighter.
+
+### Added
+- **Day change on the chip grid.** Each chip now shows the day's percent move next to the price, green for up, coral for down — the screen you glance at daily now answers "what moved?" without expanding a card.
+- **"Prices as of …".** The last successful refresh time is saved and shown next to the refresh button on every load, so the page always says how fresh its numbers are. Previous-close values persist too — the day-change readouts no longer vanish on reload.
+
+### Changed
+- **One refresh for everything.** The top **↻ Refresh prices** button now updates stocks *and* crypto in one tap. The crypto section keeps its own button.
+
+### Fixed
+- **Native number-input spinners suppressed.** Chrome's up/down arrows no longer appear inside the styled numeric fields on hover or focus.
+- **Crypto legend hover.** Hovering a crypto legend row now highlights its donut slice, matching the stock donut.
+- **"NEW" placeholder kept out of the bank dropdown.** A freshly added, not-yet-renamed position can no longer be nominated as a bank fund.
+- **Footer copy** now mentions group-cap notifications (added in 1.3.0).
+
 ## [1.3.1] — 2026-06-11
 
 ### Added
@@ -92,6 +109,7 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.3.2]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.2
 [1.3.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.0
 [1.2.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.2.1

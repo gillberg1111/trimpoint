@@ -19,8 +19,8 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 - **Drift & history.** A daily weight snapshot powers a sparkline and a 30-day "drift" readout on each position — so you can tell a temporary spike from a structural climb. Stored in one bounded file; no database.
 - **Optional login.** Gate the whole app behind a single password — or leave it open for LAN use.
 - **Your API key stays server-side.** The browser never sees it; price requests are proxied through the server.
-- **Today's move in context.** Each holding shows its previous close and the day's percent change beside the current price, so a ceiling reading is easy to size up at a glance.
-- **Notifications.** On a schedule, the server pings you (ntfy / Discord / any webhook) *only* when a holding crosses its ceiling or cash dips below your floor.
+- **Today's move in context.** Each holding shows its previous close and the day's percent change — on the expanded card and right on the chip grid — so a ceiling reading is easy to size up at a glance. The day's move and a "prices as of" timestamp survive reloads, so the dashboard always says how fresh it is.
+- **Notifications.** On a schedule, the server pings you (ntfy / Discord / any webhook) *only* when a holding crosses its ceiling, a group crosses its cap, or cash dips below your floor.
 - **Syncs across devices.** Config lives in one file on the server, so your phone and desktop see the same thing.
 
 ## How it works

@@ -34,7 +34,7 @@ const CONFIG_FILE = join(DATA_DIR, 'config.json');
 const HISTORY_FILE = join(DATA_DIR, 'history.json');
 const HISTORY_ON = HISTORY !== 'off';
 const HIST_DAYS = 730;
-const DEFAULTS = { ceiling: 25, floor: 20, bank: '', banks: [], cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30, groups: [] };
+const DEFAULTS = { ceiling: 25, floor: 20, bank: '', banks: [], cash: 0, minCash: 0, positions: [], crypto: [], cryptoCeiling: 40, cryptoFloor: 30, groups: [], pricesAsOf: 0 };
 
 // ---- effective per-position limits (overrides > scaled-from-global > global) ----
 const limits = (p, g) => {
@@ -70,7 +70,7 @@ const sanitizeConfig = (raw) => {
   const o = raw && typeof raw === 'object' ? raw : {};
   const pos = (p) => ({
     ticker: String(p?.ticker ?? '').toUpperCase().slice(0, 12),
-    shares: +p?.shares || 0, price: +p?.price || 0, cost: +p?.cost || 0,
+    shares: +p?.shares || 0, price: +p?.price || 0, cost: +p?.cost || 0, prevClose: +p?.prevClose || 0,
     ceiling: +p?.ceiling || 0, floor: +p?.floor || 0, underweightAlert: +p?.underweightAlert || 0,
     note: String(p?.note ?? '').slice(0, 200),
   });
@@ -79,7 +79,7 @@ const sanitizeConfig = (raw) => {
     ceiling: +o.ceiling || 0, floor: +o.floor || 0,
     bank: String(o.bank ?? ''),
     banks: arr(o.banks).map((b) => ({ ticker: String(b?.ticker ?? '').toUpperCase().slice(0, 12), target: +b?.target || 0 })).filter((b) => b.ticker),
-    cash: +o.cash || 0, minCash: +o.minCash || 0,
+    cash: +o.cash || 0, minCash: +o.minCash || 0, pricesAsOf: +o.pricesAsOf || 0,
     cryptoCeiling: +o.cryptoCeiling || 0, cryptoFloor: +o.cryptoFloor || 0,
     positions: arr(o.positions).map(pos),
     crypto: arr(o.crypto).map(pos),

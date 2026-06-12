@@ -18,6 +18,8 @@
     --ink:#ECE7DD;--muted:#878d99;--muted2:#5f6571;--gold:#E3A94A;--gold-dim:#a7813c;--green:#79C6A0;--blue:#84A9DA;--danger:#d98a7a;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
+  input[type=number]{appearance:textfield;-moz-appearance:textfield;}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
   html,body{background:var(--bg);}
   body{font-family:'Hanken Grotesk',sans-serif;color:var(--ink);min-height:100vh;padding:22px 16px 52px;font-variant-numeric:tabular-nums;
     background:radial-gradient(130% 90% at 12% -12%,#20242f 0%,rgba(32,36,47,0) 52%),radial-gradient(95% 65% at 105% -5%,#1b1f2b 0%,rgba(27,31,43,0) 50%),var(--bg);-webkit-font-smoothing:antialiased;}
@@ -299,7 +301,7 @@
 
   <footer>
     <span class="em">Refresh</span> pulls live prices through your server (your API key stays server-side).<br>
-    <span class="em">Notifications</span> ping you only when a holding crosses its ceiling or cash dips below your floor — and your note rides along.<br>
+    <span class="em">Notifications</span> ping you only when a holding crosses its ceiling, a group crosses its cap, or cash dips below your floor — and your note rides along.<br>
     Informational only. It tracks your positions against thresholds <em>you</em> define; it makes no recommendations and is not financial advice.<br>
     Stock data by <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">Finnhub</a> · crypto data by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" style="color:var(--gold-dim);text-decoration:none;">CoinGecko</a>.
     <span id="logoutWrap" style="display:none;"><br><a href="#" id="logoutLink" style="color:var(--gold-dim);text-decoration:none;">Log out</a></span>
@@ -321,13 +323,13 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 const PALETTE=['#E3A94A','#6FC2C9','#E588A6','#7FC795','#E89D66','#B98BD6','#D9CF63','#6FA8E0','#E0846E','#9A8CE0'];
 const BANK_COLOR='#84A9DA', CASH_COLOR='#1F9E5A';
 
-let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[] };
+let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[], pricesAsOf:0 };
 let nextId = 1, saveTimer = null, history = [], booted = false;
 const openIds = new Set(); let justOpened = null;
 
 async function loadConfig(){
-  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[], ...(await r.json()) }; }catch(e){}
-  const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, ceiling:p.ceiling||"", floor:p.floor||"", underweightAlert:p.underweightAlert||"", note:p.note||"" });
+  try{ const r = await fetch('/api/config'); if(r.status===401){ location.href='/login'; return; } if(r.ok) state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[], pricesAsOf:0, ...(await r.json()) }; }catch(e){}
+  const mapPos = p => ({ id:nextId++, ticker:p.ticker||"", shares:p.shares||0, price:p.price||0, cost:p.cost||0, prevClose:p.prevClose||0, ceiling:p.ceiling||"", floor:p.floor||"", underweightAlert:p.underweightAlert||"", note:p.note||"" });
   state.positions = (state.positions||[]).map(mapPos);
   state.crypto = (state.crypto||[]).map(mapPos);
   state.banks = Array.isArray(state.banks) && state.banks.length ? state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:b.target||"" }))
@@ -337,10 +339,10 @@ async function loadConfig(){
 function saveConfig(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, underweightAlert:num(p.underweightAlert)||0, note:(p.note||"").trim() });
+    const mapPos = p => ({ ticker:(p.ticker||"").toUpperCase(), shares:num(p.shares), price:num(p.price), cost:num(p.cost), prevClose:num(p.prevClose)||0, ceiling:num(p.ceiling)||0, floor:num(p.floor)||0, underweightAlert:num(p.underweightAlert)||0, note:(p.note||"").trim() });
     const banks = state.banks.map(b=>({ ticker:(b.ticker||"").toUpperCase(), target:num(b.target)||0 })).filter(b=>b.ticker);
     const groups = state.groups.map(g=>({ name:(g.name||"").trim().slice(0,40), members:(g.members||[]).map(t=>(t||"").toUpperCase()).filter(Boolean), ceiling:num(g.ceiling)||0 })).filter(g=>g.members.length);
-    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:banks[0]?banks[0].ticker:"", banks, cash:num(state.cash), minCash:num(state.minCash), cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
+    const payload = { ceiling:num(state.ceiling), floor:num(state.floor), bank:banks[0]?banks[0].ticker:"", banks, cash:num(state.cash), minCash:num(state.minCash), pricesAsOf:num(state.pricesAsOf)||0, cryptoCeiling:num(state.cryptoCeiling), cryptoFloor:num(state.cryptoFloor),
       positions: state.positions.map(mapPos), crypto: state.crypto.map(mapPos), groups };
     fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
   }, 400);
@@ -468,7 +470,8 @@ function animateValue(el, to){
 function paintRow(r, total, bankName, unitWord){
   const chip=$("chip-"+r.id);
   if(chip){ chip.className="chip "+r.kind+(openIds.has(r.id)?" open":""); const ct=$("ct-"+r.id); if(ct) ct.textContent=(r.ticker.trim().toUpperCase()||"—");
-    const cp=$("cp-"+r.id); if(cp) cp.textContent = num(r.price)>0 ? priceFmt(r.price) : "—";
+    const cp=$("cp-"+r.id); if(cp){ const pc=num(r.prevClose), ch=(pc>0&&num(r.price)>0)?(num(r.price)-pc)/pc*100:null;
+      cp.innerHTML = num(r.price)>0 ? priceFmt(r.price)+(ch!=null&&isFinite(ch)?` <span style="color:${ch>=0?"var(--green)":"var(--danger)"}">${ch>=0?"+":"−"}${Math.abs(ch).toFixed(1)}%</span>`:"") : "—"; }
     const cw=$("cw-"+r.id); if(cw) cw.textContent = total>0 ? r.weight.toFixed(1)+"%" : "—"; }
   const card=$("card-"+r.id); if(!card) return;
   card.className = "pos "+r.kind + (card.classList.contains("enter")?" enter":"");
@@ -575,7 +578,7 @@ function buildRows(){
 }
 function buildBankAdd(){
   const sel=$("bankAdd"); if(!sel) return; const set=bankSet();
-  const opts = state.positions.filter(p=>p.ticker.trim() && !set.has(p.ticker.trim().toUpperCase()));
+  const opts = state.positions.filter(p=>{ const tk=p.ticker.trim().toUpperCase(); return tk && tk!=="NEW" && !set.has(tk); });
   sel.style.display = opts.length ? '' : 'none';
   sel.innerHTML = `<option value="">+ Add a fund to your bank</option>` + opts.map(p=>{ const t=esc(p.ticker.trim().toUpperCase()); return `<option value="${t}">${t}</option>`; }).join('');
 }
@@ -630,6 +633,9 @@ function updateGroups(){
   renderBanner();
 }
 
+function asOfLabel(ts){ const d=new Date(ts), t=d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  return d.toDateString()===new Date().toDateString() ? `prices as of ${t}` : `prices as of ${d.toLocaleDateString([], {month:"short",day:"numeric"})}, ${t}`; }
+
 async function refreshPrices(){
   const btn=$("refreshBtn"), status=$("refreshStatus");
   const tickers=state.positions.map(p=>(p.ticker||"").trim().toUpperCase()).filter(t=>t&&t!=="NEW");
@@ -641,6 +647,7 @@ async function refreshPrices(){
     if(!r.ok) throw new Error('quote');
     const prices=await r.json(); let updated=0, missed=0;
     state.positions.forEach(p=>{ const t=(p.ticker||"").trim().toUpperCase(); if(t in prices){ const q=prices[t]; if(q&&q.c!=null){ p.price=+Number(q.c).toFixed(2); p.prevClose=(q.pc!=null)?+Number(q.pc).toFixed(2):null; updated++; } else missed++; } });
+    if(updated) state.pricesAsOf=Date.now();
     buildRows(); saveConfig(); animateValue($("dcVal"), compute().total);
     const now=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
     status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — check the server log.";
@@ -660,6 +667,7 @@ async function refreshCrypto(){
     if(!r.ok) throw new Error('crypto');
     const prices=await r.json(); let updated=0, missed=0;
     state.crypto.forEach(p=>{ const t=(p.ticker||"").trim().toUpperCase(); if(t in prices){ const q=prices[t]; if(q&&q.c!=null){ p.price=Number(q.c); p.prevClose=(q.pc!=null)?Number(q.pc):null; updated++; } else missed++; } });
+    if(updated) state.pricesAsOf=Date.now();
     buildRows(); saveConfig();
     const now=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
     status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — those coins may not be listed.";
@@ -705,20 +713,24 @@ document.addEventListener("click", e=>{
     buildRows(); saveConfig(); }
   else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } buildRows(); }
 });
-const legendEl=$("legend");
-legendEl.addEventListener("mouseover", e=>{ const leg=e.target.closest(".leg"); if(!leg) return; const s=leg.dataset.seg;
-  document.querySelectorAll("#donut .seg").forEach(g=>g.style.opacity = g.dataset.seg===s?"1":"0.18");
-  document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity = l.dataset.seg===s?"1":"0.4"); });
-legendEl.addEventListener("mouseout", e=>{ if(e.target.closest(".leg")){ document.querySelectorAll("#donut .seg").forEach(g=>g.style.opacity=""); document.querySelectorAll("#legend .leg").forEach(l=>l.style.opacity=""); } });
+function wireLegendHover(legendId, donutId){
+  const el=$(legendId); if(!el) return;
+  el.addEventListener("mouseover", e=>{ const leg=e.target.closest(".leg"); if(!leg) return; const s=leg.dataset.seg;
+    document.querySelectorAll("#"+donutId+" .seg").forEach(g=>g.style.opacity = g.dataset.seg===s?"1":"0.18");
+    document.querySelectorAll("#"+legendId+" .leg").forEach(l=>l.style.opacity = l.dataset.seg===s?"1":"0.4"); });
+  el.addEventListener("mouseout", e=>{ if(e.target.closest(".leg")){ document.querySelectorAll("#"+donutId+" .seg").forEach(g=>g.style.opacity=""); document.querySelectorAll("#"+legendId+" .leg").forEach(l=>l.style.opacity=""); } });
+}
+wireLegendHover("legend","donut");
+wireLegendHover("cryptoLegend","cryptoDonut");
 $("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
 $("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
-$("refreshBtn").addEventListener("click", refreshPrices);
+$("refreshBtn").addEventListener("click", ()=>{ if(state.positions.length) refreshPrices(); if(state.crypto.length) refreshCrypto(); if(!state.positions.length && !state.crypto.length){ $("refreshStatus").textContent="Add a position first."; $("refreshStatus").style.color="var(--muted2)"; } });
 $("cryptoRefreshBtn").addEventListener("click", refreshCrypto);
 $("groupAdd").addEventListener("click", ()=>{ state.groups.push({ name:"", members:[], ceiling:"" }); render(); saveConfig(); });
 fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; if(d&&d.version) $("verNum").textContent="TrimPoint v"+d.version; }).catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 
-(async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cCeil").value=state.cryptoCeiling; $("cFloor").value=state.cryptoFloor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); booted=true; })();
+(async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cCeil").value=state.cryptoCeiling; $("cFloor").value=state.cryptoFloor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); if(num(state.pricesAsOf)>0){ $("refreshStatus").textContent=asOfLabel(num(state.pricesAsOf)); } booted=true; })();
 </script>
 </body>
 </html>
