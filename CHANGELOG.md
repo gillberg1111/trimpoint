@@ -4,6 +4,20 @@ All notable changes to TrimPoint are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] — 2026-06-12
+
+The "living interface" release: the app now moves like a living thing instead of repainting, and installs like a real app. The visual identity is unchanged — this is all motion, feel, and platform integration. Every animation respects your OS reduced-motion setting, and every feature degrades gracefully on browsers without the API.
+
+### Added
+- **Installable app (PWA).** A web app manifest and a minimal service worker give you an install prompt on desktop and Android, a standalone window with a dark splash screen, and — after one online visit — an offline dashboard showing your last-known portfolio (config and history only; prices and saves still need the network). The worker never caches redirects, so the login flow can't be poisoned, and quote endpoints are never cached.
+- **Sticky status pill.** Scroll past the status banner and a small frosted capsule takes its place at the top of the screen — gold **▲ N to review** when anything is over a limit, green **✓ all clear** otherwise. Tap it to glide back to the top. It never appears over the visible banner or on an empty portfolio.
+- **Loading shimmer.** While a price refresh is in flight, each chip's price line becomes a soft sweeping shimmer instead of silently showing stale numbers.
+
+### Changed
+- **Interactions morph instead of popping.** Opening or closing a holding card, adding a position, or removing one now animates the layout change — chips glide into place, the card area slides open — via the View Transitions API. Browsers without it (and users with reduced motion) get the old instant behavior.
+- **The donut is alive.** When weights change — a price refresh, an edited share count — the allocation arcs sweep smoothly to their new proportions instead of snapping. Both donuts.
+- **Finish details.** Accent colors are now defined in OKLCH, so the gold and teal run subtly richer on wide-gamut (P3) screens while staying pixel-identical on sRGB; native form widgets and scrollbars render dark (`color-scheme`); the headline never wraps to a lonely word; chips and buttons compress slightly on press.
+
 ## [1.3.2] — 2026-06-12
 
 A polish pass — no new concepts, just the existing surfaces feeling tighter.
@@ -109,6 +123,7 @@ Initial public release.
 - **Cross-device sync.** Configuration lives in one file on the server.
 - **Self-hosting.** Zero-dependency Node (built-ins only), a Dockerfile and docker-compose, and a GitHub Actions workflow that builds and publishes the image to GHCR. Unraid Community Applications template included.
 
+[1.4.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.4.0
 [1.3.2]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.2
 [1.3.1]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.1
 [1.3.0]: https://github.com/gillberg1111/trimpoint/releases/tag/v1.3.0

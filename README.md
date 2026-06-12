@@ -10,6 +10,7 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 
 - **One screen, your rules.** Each holding shows its weight, how far it is from its ceiling, and — if it's over — the trim your own plan calls for. Set an optional underweight alert on anything you also want flagged when it gets too small.
 - **Built for the phone — and the desktop.** Holdings are a tap-to-expand chip grid, so a thirty-name portfolio stays a short, scannable list and anything over its ceiling glows. On a wide screen it opens into a two-column dashboard, allocation donut and value trend side by side.
+- **Installs like an app, moves like one too.** Install it from the browser (manifest + service worker) for a standalone window, a dark splash screen, and a read-only view of your last-known portfolio when you're offline. Cards morph open instead of popping, the donut sweeps to new weights as prices change, and a status pill follows you down the page — all of it respecting your OS reduced-motion setting.
 - **Per-position limits.** Set a default ceiling and trim-to landing for everything, then override either on any single position (e.g. keep a speculative name under 5%, a core one under 20%). The trim-to controls only where a trim lands; underweight flagging is a separate, optional per-position alert.
 - **Group caps.** Cap a basket of holdings under one combined ceiling — say a "Tech tilt" of three names limited to 15% together. Each position keeps its own ceiling; the group adds a limit on their total, names which member to trim when it's breached, and shows up in the status banner and notifications.
 - **Bank, where trims land.** Nominate one holding (e.g. a broad-market ETF) as the destination for trims — it's exempt from the ceiling. Or build a multi-fund bank with target weights (say a three-fund 80 / 10 / 10): each fund shows its live share of the bank, and when one drifts past its tolerance band the app spells out the exact trim or top-up to bring it back — over-target funds run warm, under-target funds cool. With several funds, trims are routed to whichever is furthest below its target, keeping your core on its split.
@@ -33,6 +34,8 @@ trimpoint/
 ├── public/
 │   ├── index.html            # the app
 │   ├── login.html            # the sign-in page (used only if a password is set)
+│   ├── manifest.webmanifest  # PWA install metadata
+│   ├── sw.js                 # service worker — offline shell
 │   ├── favicon.svg           # browser-tab icon
 │   └── apple-touch-icon.png  # home-screen icon
 ├── assets/                   # brand kit — logo mark, lockups, banner

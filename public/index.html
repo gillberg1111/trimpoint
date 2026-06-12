@@ -11,16 +11,22 @@
 <meta name="theme-color" content="#13151b">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root{
     --bg:#13151b;--bg2:#181b22;--card:#1b1f28;--card2:#1f2530;--line:#2b313c;--line-soft:#23272f;--track:#22262f;
     --ink:#ECE7DD;--muted:#878d99;--muted2:#5f6571;--gold:#E3A94A;--gold-dim:#a7813c;--green:#79C6A0;--blue:#84A9DA;--danger:#d98a7a;
+    color-scheme:dark;
+  }
+  @supports (color: oklch(70% 0.1 80)){
+    :root{--gold:oklch(76% 0.14 78);--gold-dim:oklch(62% 0.1 80);--green:oklch(77% 0.11 163);--blue:oklch(73% 0.09 258);--danger:oklch(71% 0.1 33);}
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   input[type=number]{appearance:textfield;-moz-appearance:textfield;}
   input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
   html,body{background:var(--bg);}
+  html{scrollbar-color:var(--line) var(--bg);}
   body{font-family:'Hanken Grotesk',sans-serif;color:var(--ink);min-height:100vh;padding:22px 16px 52px;font-variant-numeric:tabular-nums;
     background:radial-gradient(130% 90% at 12% -12%,#20242f 0%,rgba(32,36,47,0) 52%),radial-gradient(95% 65% at 105% -5%,#1b1f2b 0%,rgba(27,31,43,0) 50%),var(--bg);-webkit-font-smoothing:antialiased;}
   body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.022;
@@ -37,11 +43,11 @@
   .brand-mark{width:36px;height:36px;flex:0 0 auto;filter:drop-shadow(0 3px 11px rgba(227,169,74,.18));}
   .brand-name{font-family:'Fraunces',serif;font-weight:500;font-size:24px;line-height:1;letter-spacing:-.01em;color:var(--ink);}
   .brand-name em{font-style:italic;color:var(--gold);}
-  h1{font-family:'Fraunces',serif;font-weight:500;font-size:34px;line-height:1.04;letter-spacing:-.012em;margin-bottom:8px;}
+  h1{font-family:'Fraunces',serif;font-weight:500;font-size:34px;line-height:1.04;letter-spacing:-.012em;margin-bottom:8px;text-wrap:balance;}
   h1 em{font-style:italic;color:var(--gold);
     background:linear-gradient(90deg,var(--gold-dim),var(--gold) 40%,#f6d79a 50%,var(--gold) 60%,var(--gold-dim));
     background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:sheen 6s ease-in-out 1s infinite;}
-  .sub{color:var(--muted);font-size:14.5px;line-height:1.5;max-width:48ch;}
+  .sub{color:var(--muted);font-size:14.5px;line-height:1.5;max-width:48ch;text-wrap:pretty;}
   .rule{height:1px;background:linear-gradient(90deg,var(--line),transparent);margin:22px 0;border:0;}
 
   .banner{border-radius:14px;padding:16px 17px;margin-bottom:20px;border:1px solid var(--line);background:var(--bg2);display:flex;gap:13px;align-items:flex-start;}
@@ -49,6 +55,13 @@
   .banner.clear{border-color:rgba(121,198,160,.32);background:linear-gradient(180deg,rgba(121,198,160,.06),transparent);}
   .banner .mark{font-size:18px;flex-shrink:0;} .banner.act .mark{color:var(--gold);animation:pulse 2.4s ease-in-out infinite;} .banner.clear .mark{color:var(--green);}
   .banner .btxt{font-size:14.5px;line-height:1.5;} .banner .btxt b{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .pill{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%) translateY(-14px);z-index:60;opacity:0;pointer-events:none;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:.03em;color:var(--ink);padding:9px 16px;border-radius:999px;cursor:pointer;
+    background:rgba(27,31,40,.72);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);
+    border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45);transition:opacity .25s,transform .25s cubic-bezier(.2,.75,.2,1);}
+  .pill.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+  .pill.act{border-color:rgba(227,169,74,.5);color:var(--gold);}
+  .pill.clear{border-color:rgba(121,198,160,.4);color:var(--green);}
 
   /* ---- overview: donut + legend ---- */
   .overview{display:flex;gap:20px;align-items:center;padding:20px;margin-bottom:14px;border-radius:18px;border:1px solid var(--line);
@@ -56,7 +69,7 @@
   .overview:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 16px 40px rgba(0,0,0,.34);}
   .donut-wrap{position:relative;flex:0 0 auto;width:172px;height:172px;animation:donutIn .85s .12s both cubic-bezier(.2,.85,.2,1);}
   #donut,#cryptoDonut{display:block;width:172px;height:172px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.3));}
-  #donut .seg,#cryptoDonut .seg{transition:opacity .18s;}
+  #donut .seg,#cryptoDonut .seg{transition:opacity .18s,stroke-dasharray .6s cubic-bezier(.2,.75,.2,1),stroke-dashoffset .6s cubic-bezier(.2,.75,.2,1),stroke .4s linear;}
   .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
   .dc-val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:23px;letter-spacing:-.01em;text-shadow:0 0 26px rgba(227,169,74,.22);}
   .dc-lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-top:3px;}
@@ -188,6 +201,8 @@
     transition:transform .16s,border-color .2s,box-shadow .25s,background .2s;}
   .chip:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);background:rgba(31,37,48,.6);}
   .chip:focus-visible{outline:2px solid var(--gold-dim);outline-offset:2px;}
+  .chip:active{transform:scale(.97);transition-duration:.08s;}
+  .btn:active{transform:translateY(0) scale(.98);transition-duration:.08s;}
   .chip .cd{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--muted2);}
   .chip .cmain{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;}
   .chip .ct{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;letter-spacing:.02em;line-height:1.15;}
@@ -200,10 +215,14 @@
   .chip.trim .ct{color:var(--gold);} .chip.trim .cw{color:var(--gold);} .chip.trim .cd{background:var(--gold);box-shadow:0 0 11px var(--gold);}
   .chip.open{border-color:rgba(255,255,255,.22);background:rgba(31,37,48,.7);}
   @keyframes chipGlow{0%,100%{box-shadow:0 0 0 1px rgba(227,169,74,.2),0 0 16px rgba(227,169,74,.18);}50%{box-shadow:0 0 0 1px rgba(227,169,74,.42),0 0 30px rgba(227,169,74,.44);}}
+  @keyframes shimmer{0%{background-position:-160% 0;}100%{background-position:160% 0;}}
+  .chips.loading .chip .cp{color:transparent;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:shimmer 1.1s linear infinite;}
   .pos .collapse{background:transparent;border:0;color:var(--muted2);font-size:15px;cursor:pointer;padding:2px 5px;align-self:flex-start;transition:color .15s;line-height:1;} .pos .collapse:hover{color:var(--gold-dim);}
   .ph-hint{font-family:'Hanken Grotesk',sans-serif;font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted2);font-weight:400;}
   @media (max-width:460px){ .overview{flex-direction:column;gap:14px;} .ov-side{width:100%;} }
   @media (prefers-reduced-motion:reduce){ *{animation:none!important;} }
+  ::view-transition-group(*){animation-duration:.32s;animation-timing-function:cubic-bezier(.2,.75,.2,1);}
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.22s;}
 </style>
 </head>
 <body>
@@ -217,6 +236,7 @@
 
   <hr class="rule">
   <div id="banner" class="banner ease"></div>
+  <button id="pill" class="pill" type="button" aria-label="Portfolio status — back to top"></button>
 
   <div class="dash">
   <div class="overview">
@@ -322,6 +342,8 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 
 const PALETTE=['#E3A94A','#6FC2C9','#E588A6','#7FC795','#E89D66','#B98BD6','#D9CF63','#6FA8E0','#E0846E','#9A8CE0'];
 const BANK_COLOR='#84A9DA', CASH_COLOR='#1F9E5A';
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
+function morph(fn){ if(document.startViewTransition && !REDUCED.matches) document.startViewTransition(fn); else fn(); }
 
 let state = { ceiling:25, floor:20, bank:"", banks:[], cash:0, minCash:0, positions:[], crypto:[], cryptoCeiling:40, cryptoFloor:30, groups:[], pricesAsOf:0 };
 let nextId = 1, saveTimer = null, history = [], booted = false;
@@ -440,9 +462,17 @@ function bankRouteLabel(){
 
 function renderDonut(svgId, segs, total){
   const svg=$(svgId); const cx=90,cy=90,r=64,sw=20,C=2*Math.PI*r;
+  const arc=s=>{ const full=C*Math.max(0,Math.min(100,s.pct))/100; return { full, len:Math.max(0,full-2) }; };
+  const old=[...svg.querySelectorAll('.seg')];
+  if(total>0 && old.length===segs.length && segs.every((s,i)=>old[i].dataset.seg===s.label)){
+    let off=0;
+    segs.forEach((s,i)=>{ const a=arc(s), el=old[i]; el.setAttribute('stroke',s.color);
+      el.style.strokeDasharray=`${a.len.toFixed(2)} ${(C-a.len).toFixed(2)}`; el.style.strokeDashoffset=(-off).toFixed(2); off+=a.full; });
+    return;
+  }
   let off=0, inner=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>`;
-  if(total>0) segs.forEach(s=>{ const full=C*Math.max(0,Math.min(100,s.pct))/100, len=Math.max(0,full-2);
-    inner+=`<circle class="seg" data-seg="${esc(s.label)}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`; off+=full; });
+  if(total>0) segs.forEach(s=>{ const a=arc(s);
+    inner+=`<circle class="seg" data-seg="${esc(s.label)}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${a.len.toFixed(2)} ${(C-a.len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`; off+=a.full; });
   svg.innerHTML=inner;
 }
 function renderLegend(legendId, segs){
@@ -492,14 +522,16 @@ function paintRow(r, total, bankName, unitWord){
 function renderBanner(){
   const stock=compute(), crypto=computeCrypto(), groups=computeGroups(stock);
   const over=stock.overCount+crypto.overCount, groupsOver=groups.filter(g=>g.over).length;
-  const b=$("banner");
-  if(!state.positions.length && !state.crypto.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; return; }
+  const b=$("banner"), pill=$("pill");
+  if(!state.positions.length && !state.crypto.length){ b.className="banner"; b.innerHTML=`<span class="mark" style="color:var(--muted2)">·</span><div class="btxt">Add your positions below to start tracking.</div>`; pill.dataset.on="0"; syncPill(); return; }
   const parts=[];
   if(over) parts.push(`${over} position${over>1?"s":""} over your ceiling`);
   if(groupsOver) parts.push(`${groupsOver} group${groupsOver>1?"s":""} over cap`);
   if(stock.cashLow) parts.push(`cash below your ${stock.minCash}% floor`);
-  if(parts.length){ b.className="banner act"; b.innerHTML=`<span class="mark">▲</span><div class="btxt">${parts.join(" · ")} — check your plan.</div>`; }
-  else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; }
+  const n=over+groupsOver+(stock.cashLow?1:0);
+  if(parts.length){ b.className="banner act"; b.innerHTML=`<span class="mark">▲</span><div class="btxt">${parts.join(" · ")} — check your plan.</div>`; pill.className="pill act"; pill.textContent=`▲ ${n} to review`; }
+  else { b.className="banner clear"; b.innerHTML=`<span class="mark">✓</span><div class="btxt">Everything's within your limits. Nothing to do.</div>`; pill.className="pill clear"; pill.textContent=`✓ all clear`; }
+  pill.dataset.on="1"; syncPill();
 }
 function render(){
   const stock = compute();
@@ -545,7 +577,7 @@ function buildCardsInto(hostId, list, gC, gF, amtLabel){
   const host=$(hostId); if(!host) return; host.innerHTML="";
   const costLabel = amtLabel==="Units" ? "Avg cost / unit" : "Cost / sh";
   list.filter(p=>openIds.has(p.id)).forEach((p)=>{
-    const el=document.createElement("div"); el.className="pos"; el.id="card-"+p.id;
+    const el=document.createElement("div"); el.className="pos"; el.id="card-"+p.id; el.style.viewTransitionName="tpd-"+p.id;
     if(justOpened===p.id) el.classList.add("enter");
     el.innerHTML=`<div class="top"><div class="tkr"><input data-id="${p.id}" data-f="ticker" value="${esc(p.ticker)}" maxlength="6" aria-label="ticker"><span id="tags-${p.id}"></span></div>
       <div style="display:flex;align-items:flex-start;gap:6px;"><div class="right"><div class="wt" id="wt-${p.id}">—</div><div class="mv" id="mv-${p.id}">—</div></div><button class="collapse" data-open="${p.id}" title="collapse">▴</button><button class="rm" data-rm="${p.id}" title="remove">×</button></div></div>
@@ -566,7 +598,7 @@ function buildCardsInto(hostId, list, gC, gF, amtLabel){
 function buildChipsInto(hostId, list, emptyMsg){
   const host=$(hostId); if(!host) return;
   if(!list.length){ host.innerHTML = emptyMsg ? `<div class="empty" style="grid-column:1/-1;">${emptyMsg}</div>` : ""; return; }
-  host.innerHTML = list.map(p=>`<button class="chip" id="chip-${p.id}" data-open="${p.id}"><span class="cd"></span><span class="cmain"><span class="ct" id="ct-${p.id}">${esc((p.ticker||"").toUpperCase()||"—")}</span><span class="cp" id="cp-${p.id}">—</span></span><span class="cw" id="cw-${p.id}">—</span></button>`).join('');
+  host.innerHTML = list.map(p=>`<button class="chip" id="chip-${p.id}" data-open="${p.id}" style="view-transition-name:tpc-${p.id}"><span class="cd"></span><span class="cmain"><span class="ct" id="ct-${p.id}">${esc((p.ticker||"").toUpperCase()||"—")}</span><span class="cp" id="cp-${p.id}">—</span></span><span class="cw" id="cw-${p.id}">—</span></button>`).join('');
 }
 function buildRows(){
   buildCardsInto("rows", state.positions, num(state.ceiling), num(state.floor), "Shares");
@@ -640,7 +672,7 @@ async function refreshPrices(){
   const btn=$("refreshBtn"), status=$("refreshStatus");
   const tickers=state.positions.map(p=>(p.ticker||"").trim().toUpperCase()).filter(t=>t&&t!=="NEW");
   if(!tickers.length){ status.textContent="Add a position first."; status.style.color="var(--muted2)"; return; }
-  const label=btn.textContent; btn.disabled=true; btn.textContent="Refreshing…"; status.textContent="Fetching latest prices…"; status.style.color="var(--muted)";
+  const label=btn.textContent; btn.disabled=true; btn.textContent="Refreshing…"; status.textContent="Fetching latest prices…"; status.style.color="var(--muted)"; $("chips").classList.add("loading");
   try{
     const r=await fetch('/api/quote?symbols='+encodeURIComponent(tickers.join(',')));
     if(r.status===401){ location.href='/login'; return; }
@@ -653,14 +685,14 @@ async function refreshPrices(){
     status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — check the server log.";
     status.style.color = updated ? "var(--green)" : "var(--muted2)";
   }catch(e){ status.textContent="Couldn't reach the price service — check the server."; status.style.color="var(--muted2)"; }
-  finally{ btn.disabled=false; btn.textContent=label; }
+  finally{ btn.disabled=false; btn.textContent=label; $("chips").classList.remove("loading"); }
 }
 
 async function refreshCrypto(){
   const btn=$("cryptoRefreshBtn"), status=$("cryptoRefreshStatus");
   const tickers=state.crypto.map(p=>(p.ticker||"").trim().toUpperCase()).filter(t=>t&&t!=="NEW");
   if(!tickers.length){ status.textContent="Add a coin first."; status.style.color="var(--muted2)"; return; }
-  const label=btn.textContent; btn.disabled=true; btn.textContent="Updating…"; status.textContent="Fetching latest prices…"; status.style.color="var(--muted)";
+  const label=btn.textContent; btn.disabled=true; btn.textContent="Updating…"; status.textContent="Fetching latest prices…"; status.style.color="var(--muted)"; $("cryptoChips").classList.add("loading");
   try{
     const r=await fetch('/api/crypto?symbols='+encodeURIComponent(tickers.join(',')));
     if(r.status===401){ location.href='/login'; return; }
@@ -673,7 +705,7 @@ async function refreshCrypto(){
     status.textContent = updated ? `Updated ${updated}${missed?`, ${missed} not found`:""} · ${now}.` : "No prices came back — those coins may not be listed.";
     status.style.color = updated ? "var(--green)" : "var(--muted2)";
   }catch(e){ status.textContent="Couldn't reach the price service — check the server."; status.style.color="var(--muted2)"; }
-  finally{ btn.disabled=false; btn.textContent=label; }
+  finally{ btn.disabled=false; btn.textContent=label; $("cryptoChips").classList.remove("loading"); }
 }
 
 document.addEventListener("input", e=>{
@@ -710,8 +742,8 @@ document.addEventListener("click", e=>{
   else if(rm){ const id=rm.dataset.rm; const gone=(state.positions.find(p=>p.id==id)||{}).ticker; const tk=(gone||"").trim().toUpperCase();
     state.positions=state.positions.filter(p=>p.id!=id); state.crypto=state.crypto.filter(p=>p.id!=id); openIds.delete(+id);
     if(tk){ state.banks=state.banks.filter(b=>(b.ticker||"").trim().toUpperCase()!==tk); state.groups.forEach(g=>{ g.members=(g.members||[]).filter(m=>(m||"").trim().toUpperCase()!==tk); }); }
-    buildRows(); saveConfig(); }
-  else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } buildRows(); }
+    morph(buildRows); saveConfig(); }
+  else if(op){ const id=+op.dataset.open; if(openIds.has(id)) openIds.delete(id); else { openIds.add(id); justOpened=id; } morph(buildRows); }
 });
 function wireLegendHover(legendId, donutId){
   const el=$(legendId); if(!el) return;
@@ -722,12 +754,17 @@ function wireLegendHover(legendId, donutId){
 }
 wireLegendHover("legend","donut");
 wireLegendHover("cryptoLegend","cryptoDonut");
-$("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
-$("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; buildRows(); saveConfig(); });
+let bannerOff=false;
+function syncPill(){ const p=$("pill"); p.classList.toggle("show", bannerOff && p.dataset.on==="1"); }
+new IntersectionObserver(es=>{ bannerOff=!es[0].isIntersecting; syncPill(); },{rootMargin:"-1px 0px 0px 0px"}).observe($("banner"));
+$("pill").addEventListener("click", ()=>scrollTo({top:0,behavior:REDUCED.matches?"auto":"smooth"}));
+$("addBtn").addEventListener("click", ()=>{ const id=nextId++; state.positions.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; morph(buildRows); saveConfig(); });
+$("addCryptoBtn").addEventListener("click", ()=>{ const id=nextId++; state.crypto.push({id, ticker:"NEW", shares:0, price:0, cost:0, ceiling:"", floor:"", underweightAlert:"", note:""}); openIds.add(id); justOpened=id; morph(buildRows); saveConfig(); });
 $("refreshBtn").addEventListener("click", ()=>{ if(state.positions.length) refreshPrices(); if(state.crypto.length) refreshCrypto(); if(!state.positions.length && !state.crypto.length){ $("refreshStatus").textContent="Add a position first."; $("refreshStatus").style.color="var(--muted2)"; } });
 $("cryptoRefreshBtn").addEventListener("click", refreshCrypto);
 $("groupAdd").addEventListener("click", ()=>{ state.groups.push({ name:"", members:[], ceiling:"" }); render(); saveConfig(); });
 fetch('/api/health').then(r=>r.json()).then(d=>{ if(d&&d.auth) $("logoutWrap").style.display="inline"; if(d&&d.version) $("verNum").textContent="TrimPoint v"+d.version; }).catch(()=>{});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
 $("logoutLink").addEventListener("click", async e=>{ e.preventDefault(); try{ await fetch('/api/logout',{method:'POST'}); }catch(_){} location.href='/login'; });
 
 (async ()=>{ await loadConfig(); await loadHistory(); $("ceil").value=state.ceiling; $("floor").value=state.floor; $("cCeil").value=state.cryptoCeiling; $("cFloor").value=state.cryptoFloor; $("cash").value=state.cash; $("minCash").value=state.minCash; buildRows(); animateValue($("dcVal"), compute().total); if(num(state.pricesAsOf)>0){ $("refreshStatus").textContent=asOfLabel(num(state.pricesAsOf)); } booted=true; })();

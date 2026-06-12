@@ -311,10 +311,11 @@ const cookie = (req, name) => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const isPublic = (path, method) =>
   path === '/api/health' || path === '/login' || (path === '/api/login' && method === 'POST') ||
-  path === '/favicon.svg' || path === '/apple-touch-icon.png';
+  path === '/favicon.svg' || path === '/apple-touch-icon.png' ||
+  path === '/manifest.webmanifest' || path === '/sw.js';
 
 // ---- http ----
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const send = (res, status, body, type = 'application/json') => {
   res.writeHead(status, { 'Content-Type': type });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
