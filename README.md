@@ -10,7 +10,7 @@ A small, self-hosted **position-ceiling tracker**. You set the maximum weight an
 
 - **One screen, your rules.** Each holding shows its weight, how far it is from its ceiling, and — if it's over — the trim your own plan calls for. Set an optional underweight alert on anything you also want flagged when it gets too small.
 - **Built for the phone — and the desktop.** Holdings are a tap-to-expand chip grid, so a thirty-name portfolio stays a short, scannable list and anything over its ceiling glows. On a wide screen it opens into a two-column dashboard, allocation donut and value trend side by side.
-- **Installs like an app, moves like one too.** Install it from the browser (manifest + service worker) for a standalone window, a dark splash screen, and a read-only view of your last-known portfolio when you're offline. Cards morph open instead of popping, the donut sweeps to new weights as prices change, and a status pill follows you down the page — all of it respecting your OS reduced-motion setting.
+- **Installs like an app, moves like one too.** Install it from the browser (manifest + service worker) for a standalone window, a dark splash screen, and a read-only view of your last-known portfolio when you're offline — note install/offline need HTTPS, see [Installing as an app](#installing-as-an-app-pwa). Cards morph open instead of popping, the donut sweeps to new weights as prices change, and a status pill follows you down the page — all of it respecting your OS reduced-motion setting.
 - **Per-position limits.** Set a default ceiling and trim-to landing for everything, then override either on any single position (e.g. keep a speculative name under 5%, a core one under 20%). The trim-to controls only where a trim lands; underweight flagging is a separate, optional per-position alert.
 - **Group caps.** Cap a basket of holdings under one combined ceiling — say a "Tech tilt" of three names limited to 15% together. Each position keeps its own ceiling; the group adds a limit on their total, names which member to trim when it's breached, and shows up in the status banner and notifications.
 - **Bank, where trims land.** Nominate one holding (e.g. a broad-market ETF) as the destination for trims — it's exempt from the ceiling. Or build a multi-fund bank with target weights (say a three-fund 80 / 10 / 10): each fund shows its live share of the bank, and when one drifts past its tolerance band the app spells out the exact trim or top-up to bring it back — over-target funds run warm, under-target funds cool. With several funds, trims are routed to whichever is furthest below its target, keeping your core on its split.
@@ -69,6 +69,20 @@ TrimPoint is **single-user by design** — one password gates the whole app, no 
 - **Forgot the password?** There is no reset flow, on purpose — change `AUTH_PASSWORD` in `.env` and restart the container. That's the reset.
 
 The password is compared in constant time and never leaves the server; the browser only ever holds a signed, HttpOnly session cookie (30-day expiry).
+
+## Installing as an app (PWA)
+
+TrimPoint ships a web app manifest and a small service worker, so browsers can install it as a standalone app — its own window, a dark splash screen, and (after one online visit) an offline, read-only view of your last-known portfolio. Prices and saving still need the network.
+
+**One requirement: browsers only enable service workers and the install prompt over a *secure context*** — that's `https://…` or `http://localhost`. Over plain HTTP on a LAN IP (e.g. `http://192.168.1.50:8080`) the whole app works fine, but install and offline mode silently stay off; that's the browser's rule, not a bug.
+
+To unlock them on your network, put TrimPoint behind HTTPS — any of these work well with a self-hosted setup:
+
+- a reverse proxy with a certificate (Caddy, Traefik, Nginx Proxy Manager),
+- [Tailscale Serve](https://tailscale.com/kb/1312/serve), which gives a container a trusted HTTPS URL on your tailnet with one command,
+- or your existing home-lab certificate setup.
+
+If you use a password, set `COOKIE_SECURE=true` once you're on HTTPS. ("Add to Home Screen" on iOS still works over plain HTTP as a bookmark-style icon — you just won't get the offline shell.)
 
 ## Unraid
 
